@@ -7,8 +7,8 @@ router = APIRouter(prefix="/api/ai", tags=["health"])
 def health_check():
     """AI 服务健康检查"""
     return {
-        "code": 200,
-        "msg": "AI 服务运行正常",
+        "code": 0,
+        "msg": "success",
         "data": {
             "status": "ok",
             "service": "lingmou_ai",

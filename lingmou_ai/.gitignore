@@ -1,0 +1,19 @@
+# 密钥（严禁入库）
+.env
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+
+# 日志
+*.log
