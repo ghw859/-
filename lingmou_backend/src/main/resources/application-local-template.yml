@@ -1,0 +1,19 @@
+# ============================================================
+# 本地配置文件模板
+# 每个人clone项目后，复制此文件改名为 application-local.yml
+# 填入自己的密码，application-local.yml 不会提交到Git
+# ============================================================
+
+# 你的MySQL密码
+spring:
+  datasource:
+    password: 你的MySQL密码      # ← 改成你的
+
+  # 你的Redis密码（没密码留空）
+  data:
+    redis:
+      password:                  # ← 没密码留空
+
+# JWT密钥（三人用同一个密钥，否则Token不互通）
+jwt:
+  secret: LingMouZhiBanTong2026SecretKeyForJWTAtLeast32Chars

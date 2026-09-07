@@ -1,0 +1,28 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### VS Code ###
+.vscode/
+.settings/
+.project
+.classpath
+
+### 其他 ###
+*.log
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+
+### 敏感配置（不要上传密码到Git）###
+application-local.yml
+application-prod.yml

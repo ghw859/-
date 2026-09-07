@@ -1,0 +1,2 @@
+# MyBatis XML映射文件放这里
+# 文件命名：{Entity}Mapper.xml，如 UserMapper.xml
