@@ -45,4 +45,14 @@ public interface AppointmentService {
      * 检查用户是否在同一时段有其他预约
      */
     boolean hasConflictAppointment(Long userId, String date, String timeSlot);
+
+    /**
+     * 查询预约进度
+     */
+    AppointmentResponse getProgress(Long id, Long userId);
+
+    /**
+     * 推进预约进度（手动按钮）
+     */
+    AppointmentResponse advanceProgress(Long id, Long userId);
 }

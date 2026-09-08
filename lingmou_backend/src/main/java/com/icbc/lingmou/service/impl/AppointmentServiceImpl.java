@@ -176,6 +176,52 @@ public class AppointmentServiceImpl implements AppointmentService {
         return count > 0;
     }
 
+    @Override
+    public AppointmentResponse getProgress(Long id, Long userId) {
+        Appointment appointment = appointmentMapper.selectById(id);
+        if (appointment == null) {
+            throw new BusinessException(ResultCode.APPOINTMENT_NOT_FOUND);
+        }
+        if (!appointment.getUserId().equals(userId)) {
+            throw new BusinessException(ResultCode.FORBIDDEN);
+        }
+        Branch branch = branchMapper.selectById(appointment.getBranchId());
+        return toResponse(appointment, branch != null ? branch.getName() : "");
+    }
+
+    @Override
+    @Transactional
+    public AppointmentResponse advanceProgress(Long id, Long userId) {
+        Appointment appointment = appointmentMapper.selectById(id);
+        if (appointment == null) {
+            throw new BusinessException(ResultCode.APPOINTMENT_NOT_FOUND);
+        }
+        if (!appointment.getUserId().equals(userId)) {
+            throw new BusinessException(ResultCode.FORBIDDEN);
+        }
+
+        Integer currentStep = appointment.getProgressStep();
+        if (currentStep >= 4) {
+            throw new BusinessException(ResultCode.APPOINTMENT_COMPLETED);
+        }
+
+        // 手动推进一步
+        appointment.setProgressStep(currentStep + 1);
+
+        // 根据步骤更新状态
+        switch (appointment.getProgressStep()) {
+            case 1 -> appointment.setStatus("ACTIVE");
+            case 2 -> appointment.setStatus("CALLED");
+            case 3 -> appointment.setStatus("PROCESSING");
+            case 4 -> appointment.setStatus("COMPLETED");
+        }
+
+        appointmentMapper.updateById(appointment);
+
+        Branch branch = branchMapper.selectById(appointment.getBranchId());
+        return toResponse(appointment, branch != null ? branch.getName() : "");
+    }
+
     /**
      * 生成凭证号
      */

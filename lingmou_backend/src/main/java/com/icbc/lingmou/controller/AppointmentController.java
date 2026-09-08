@@ -61,4 +61,24 @@ public class AppointmentController {
         appointmentService.cancelAppointment(id, userId);
         return Result.success("预约已取消", null);
     }
+
+    @Operation(summary = "查询进度", description = "查询预约办理进度")
+    @GetMapping("/{id}/progress")
+    public Result<AppointmentResponse> getProgress(
+            @PathVariable Long id,
+            HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        AppointmentResponse response = appointmentService.getProgress(id, userId);
+        return Result.success(response);
+    }
+
+    @Operation(summary = "推进进度", description = "手动按钮推进办理进度（仅能推进到下一步）")
+    @PutMapping("/{id}/progress")
+    public Result<AppointmentResponse> advanceProgress(
+            @PathVariable Long id,
+            HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        AppointmentResponse response = appointmentService.advanceProgress(id, userId);
+        return Result.success("进度已推进", response);
+    }
 }
