@@ -34,6 +34,27 @@ BUSINESS_MATERIALS = {
     "WEALTH_MGMT":       ["idCard", "riskAssessment", "investAmount"],
 }
 
+# 业务类型关键词映射（Day 5 预填单兜底解析）
+# 用于从自然语言文本推断 businessType
+BUSINESS_KEYWORDS = {
+    "OPEN_ACCOUNT":     ["开户", "办卡", "新卡", "开卡"],
+    "CARD_LOSS":         ["挂失", "补卡", "丢卡", "卡丢"],
+    "LARGE_TRANSFER":    ["转账", "汇款", "转钱", "打款"],
+    "DEPOSIT":           ["存款", "存钱", "存入", "存"],
+    "LOAN_APPLICATION":  ["贷款", "借款", "贷一下"],
+    "WEALTH_MGMT":       ["理财", "投资", "买基金", "买产品"],
+}
+
+# 各业务期望解析出的字段（Day 5 置信度计算用）
+BUSINESS_EXPECTED_FIELDS = {
+    "OPEN_ACCOUNT":     ["name", "idCard", "phone", "address"],
+    "CARD_LOSS":         ["name", "idCard", "cardNumber"],
+    "LARGE_TRANSFER":    ["name", "idCard", "payeeName", "payeeAccount", "amount"],
+    "DEPOSIT":           ["amount"],
+    "LOAN_APPLICATION":  ["name", "idCard", "amount", "loanTerm"],
+    "WEALTH_MGMT":       ["name", "idCard", "investAmount"],
+}
+
 
 @dataclass
 class Settings:
@@ -42,7 +63,7 @@ class Settings:
     chat_history_ttl: int = int(os.getenv("CHAT_HISTORY_TTL", "1800"))  # 30 分钟
     chat_history_max: int = int(os.getenv("CHAT_HISTORY_MAX", "20"))   # 最多 20 轮（40 条）
 
-    # LLM（Day 1 已有，保留）
+    # LLM（Day 1 已有，保留；Day 5 预填单解析严禁使用）
     dashscope_api_key: str = os.getenv("DASHSCOPE_API_KEY", "")
     qwen_model: str = os.getenv("QWEN_MODEL", "qwen-turbo")
 
@@ -56,11 +77,17 @@ class Settings:
     # 材料预检
     business_materials: dict = field(default_factory=lambda: BUSINESS_MATERIALS)
 
+    # 预填单兜底解析
+    business_keywords: dict = field(default_factory=lambda: BUSINESS_KEYWORDS)
+    business_expected_fields: dict = field(default_factory=lambda: BUSINESS_EXPECTED_FIELDS)
+    parse_confidence_threshold: float = float(os.getenv("PARSE_CONFIDENCE_THRESHOLD", "0.3"))
+
     # AI 错误码段位 6xxxx
     err_param = 60001
     err_redis = 60002
     err_predict = 60003
     err_unknown_business = 60004
+    err_parse_failed = 60005
     err_internal = 60099
 
 
