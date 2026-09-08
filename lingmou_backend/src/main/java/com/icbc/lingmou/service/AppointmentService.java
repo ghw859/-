@@ -1,9 +1,9 @@
 package com.icbc.lingmou.service;
 
+import com.icbc.lingmou.common.PageResult;
 import com.icbc.lingmou.dto.request.AppointmentHistoryRequest;
 import com.icbc.lingmou.dto.request.AppointmentRequest;
 import com.icbc.lingmou.dto.response.AppointmentResponse;
-import com.icbc.lingmou.dto.response.PageResponse;
 import com.icbc.lingmou.entity.Appointment;
 
 import java.util.List;
@@ -61,5 +61,5 @@ public interface AppointmentService {
     /**
      * 历史预约查询（分页+多条件）
      */
-    PageResponse<AppointmentResponse> getHistory(Long userId, AppointmentHistoryRequest request);
+    PageResult<AppointmentResponse> getHistory(Long userId, AppointmentHistoryRequest request);
 }

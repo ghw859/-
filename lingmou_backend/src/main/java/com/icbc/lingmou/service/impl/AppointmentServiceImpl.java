@@ -4,11 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.icbc.lingmou.common.BusinessException;
+import com.icbc.lingmou.common.PageResult;
 import com.icbc.lingmou.common.ResultCode;
 import com.icbc.lingmou.dto.request.AppointmentHistoryRequest;
 import com.icbc.lingmou.dto.request.AppointmentRequest;
 import com.icbc.lingmou.dto.response.AppointmentResponse;
-import com.icbc.lingmou.dto.response.PageResponse;
 import com.icbc.lingmou.entity.Appointment;
 import com.icbc.lingmou.entity.Branch;
 import com.icbc.lingmou.mapper.AppointmentMapper;
@@ -235,7 +235,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
-    public PageResponse<AppointmentResponse> getHistory(Long userId, AppointmentHistoryRequest request) {
+    public PageResult<AppointmentResponse> getHistory(Long userId, AppointmentHistoryRequest request) {
         int pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
         int pageSize = request.getPageSize() != null ? request.getPageSize() : 10;
 
@@ -263,20 +263,13 @@ public class AppointmentServiceImpl implements AppointmentService {
         IPage<Appointment> page = new Page<>(pageNum, pageSize);
         IPage<Appointment> result = appointmentMapper.selectPage(page, wrapper);
 
-        long total = result.getTotal();
-        int totalPages = (int) Math.ceil((double) total / pageSize);
+        List<AppointmentResponse> records = result.getRecords().stream().map(apt -> {
+            Branch branch = branchMapper.selectById(apt.getBranchId());
+            String branchName = branch != null ? branch.getName() : "";
+            return toResponse(apt, branchName);
+        }).toList();
 
-        return PageResponse.<AppointmentResponse>builder()
-            .pageNum(pageNum)
-            .pageSize(pageSize)
-            .total(total)
-            .totalPages(totalPages)
-            .records(result.getRecords().stream().map(apt -> {
-                Branch branch = branchMapper.selectById(apt.getBranchId());
-                String branchName = branch != null ? branch.getName() : "";
-                return toResponse(apt, branchName);
-            }).toList())
-            .build();
+        return PageResult.of(pageNum, pageSize, result.getTotal(), records);
     }
 
     /**
