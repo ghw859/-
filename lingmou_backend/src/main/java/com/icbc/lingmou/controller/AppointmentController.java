@@ -1,0 +1,64 @@
+package com.icbc.lingmou.controller;
+
+import com.icbc.lingmou.common.Result;
+import com.icbc.lingmou.dto.request.AppointmentRequest;
+import com.icbc.lingmou.dto.response.AppointmentResponse;
+import com.icbc.lingmou.service.AppointmentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * 预约控制器
+ */
+@Tag(name = "预约管理", description = "智能预约排队")
+@RestController
+@RequestMapping("/api/appointments")
+@RequiredArgsConstructor
+public class AppointmentController {
+
+    private final AppointmentService appointmentService;
+
+    @Operation(summary = "创建预约", description = "创建新的预约")
+    @PostMapping
+    public Result<AppointmentResponse> createAppointment(
+            @Valid @RequestBody AppointmentRequest request,
+            HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        AppointmentResponse response = appointmentService.createAppointment(userId, request);
+        return Result.success("预约创建成功", response);
+    }
+
+    @Operation(summary = "我的预约", description = "查询当前用户的预约列表")
+    @GetMapping("/my")
+    public Result<List<AppointmentResponse>> getMyAppointments(HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        List<AppointmentResponse> appointments = appointmentService.getUserAppointments(userId);
+        return Result.success(appointments);
+    }
+
+    @Operation(summary = "预约详情", description = "查询单个预约详情")
+    @GetMapping("/{id}")
+    public Result<AppointmentResponse> getAppointmentById(
+            @PathVariable Long id,
+            HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        AppointmentResponse response = appointmentService.getAppointmentById(id, userId);
+        return Result.success(response);
+    }
+
+    @Operation(summary = "取消预约", description = "取消已创建的预约")
+    @DeleteMapping("/{id}")
+    public Result<Void> cancelAppointment(
+            @PathVariable Long id,
+            HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        appointmentService.cancelAppointment(id, userId);
+        return Result.success("预约已取消", null);
+    }
+}
