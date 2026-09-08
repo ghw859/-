@@ -1,6 +1,27 @@
 """AI 服务配置，统一从环境变量读取。"""
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+
+# 4 个网点种子数据（Day 3 硬编码占位，Day 8 联调时改由 Java /api/branches 拉取）
+BRANCHES_SEED = [
+    {"id": 1, "name": "工行北京分行营业部", "busy_factor": 1.2},
+    {"id": 2, "name": "工行上海陆家嘴支行", "busy_factor": 1.0},
+    {"id": 3, "name": "工行深圳福田支行",   "busy_factor": 0.9},
+    {"id": 4, "name": "工行杭州西湖支行",   "busy_factor": 0.7},
+]
+
+# 24 时段基线客流（银行典型日形态）
+# 索引 0-23 对应 00:00 - 23:00
+HOURLY_BASELINE = [
+    0, 0, 0, 0, 0, 2,           # 00-05 夜间
+    5, 15,                         # 06-07 开门前聚集
+    80, 110, 120, 90,              # 08-11 上午高峰
+    45, 55,                        # 12-13 午休
+    95, 125, 130, 100,             # 14-17 下午高峰
+    50, 30,                        # 18-19 临近下班
+    5, 2, 1, 0                     # 20-23 非营业
+]
 
 
 @dataclass
@@ -14,9 +35,17 @@ class Settings:
     dashscope_api_key: str = os.getenv("DASHSCOPE_API_KEY", "")
     qwen_model: str = os.getenv("QWEN_MODEL", "qwen-turbo")
 
+    # 热力图
+    branches_seed: list = field(default_factory=lambda: BRANCHES_SEED)
+    hourly_baseline: list = field(default_factory=lambda: HOURLY_BASELINE)
+    heatmap_history_days: int = int(os.getenv("HEATMAP_HISTORY_DAYS", "14"))
+    heatmap_cache_ttl: int = int(os.getenv("HEATMAP_CACHE_TTL", "86400"))  # 1 天
+    heatmap_seed_base: int = int(os.getenv("HEATMAP_SEED_BASE", "42"))
+
     # AI 错误码段位 6xxxx
     err_param = 60001
     err_redis = 60002
+    err_predict = 60003
     err_internal = 60099
 
 

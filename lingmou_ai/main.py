@@ -7,6 +7,7 @@ load_dotenv()
 
 from routers.health import router as health_router
 from routers.chat import router as chat_router
+from routers.heatmap import router as heatmap_router
 from services.llm_client import llm_client
 from services.redis_client import redis_client
 
@@ -27,6 +28,7 @@ app.add_middleware(
 # 注册路由
 app.include_router(health_router)
 app.include_router(chat_router)
+app.include_router(heatmap_router)
 
 
 @app.on_event("startup")
