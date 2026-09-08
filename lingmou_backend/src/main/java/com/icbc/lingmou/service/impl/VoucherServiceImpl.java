@@ -34,6 +34,7 @@ public class VoucherServiceImpl implements VoucherService {
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     @Override
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public String generateVoucherNum(String branchCode) {
         if (branchCode == null || branchCode.length() < 2) {
             throw new BusinessException(ResultCode.VOUCHER_NUM_GENERATE_FAIL, "网点编码无效");

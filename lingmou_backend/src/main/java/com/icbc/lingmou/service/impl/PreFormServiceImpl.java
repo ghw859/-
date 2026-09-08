@@ -33,6 +33,8 @@ public class PreFormServiceImpl implements PreFormService {
         preForm.setBusinessType(request.getBusinessType());
         preForm.setRawText(request.getRawText());
         preForm.setParsedJson(request.getParsedJson());
+        preForm.setImageUrls(request.getImageUrls());
+        preForm.setSignatureUrl(request.getSignatureUrl());
         preForm.setStatus("DRAFT");
 
         preFormMapper.insert(preForm);
@@ -75,6 +77,8 @@ public class PreFormServiceImpl implements PreFormService {
         preForm.setBusinessType(request.getBusinessType());
         preForm.setRawText(request.getRawText());
         preForm.setParsedJson(request.getParsedJson());
+        preForm.setImageUrls(request.getImageUrls());
+        preForm.setSignatureUrl(request.getSignatureUrl());
 
         preFormMapper.updateById(preForm);
         return toResponse(preForm);
@@ -101,6 +105,8 @@ public class PreFormServiceImpl implements PreFormService {
             .businessType(preForm.getBusinessType())
             .rawText(preForm.getRawText())
             .parsedJson(preForm.getParsedJson())
+            .imageUrls(preForm.getImageUrls())
+            .signatureUrl(preForm.getSignatureUrl())
             .status(preForm.getStatus())
             .createdAt(preForm.getCreatedAt())
             .updatedAt(preForm.getUpdatedAt())

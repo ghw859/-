@@ -21,4 +21,10 @@ public class PreFormRequest {
 
     @Schema(description = "解析后的JSON（可选）")
     private String parsedJson;
+
+    @Schema(description = "上传的材料图片URL列表（JSON数组字符串，可选）")
+    private String imageUrls;
+
+    @Schema(description = "签名图片URL（可选）")
+    private String signatureUrl;
 }

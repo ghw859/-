@@ -33,6 +33,12 @@ public class PreFormResponse {
     @Schema(description = "解析后的JSON")
     private String parsedJson;
 
+    @Schema(description = "上传的材料图片URL列表（JSON数组字符串）")
+    private String imageUrls;
+
+    @Schema(description = "签名图片URL")
+    private String signatureUrl;
+
     @Schema(description = "状态: DRAFT/SUBMITTED/USED")
     private String status;
 

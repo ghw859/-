@@ -59,7 +59,8 @@ jwt:
 # SpringDoc Swagger配置
 springdoc:
   swagger-ui:
-    path: /swagger
+    # 访问地址：http://localhost:8080/swagger-ui.html（与规范一致）
+    path: /swagger-ui.html
     operations-sorter: method
     tags-sorter: alpha
   api-docs:
