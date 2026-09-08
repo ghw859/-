@@ -23,6 +23,17 @@ HOURLY_BASELINE = [
     5, 2, 1, 0                     # 20-23 非营业
 ]
 
+# 6 类业务所需材料清单（Day 4）
+# key = businessType，value = 必填字段名列表
+BUSINESS_MATERIALS = {
+    "OPEN_ACCOUNT":     ["idCard", "phone", "address"],
+    "CARD_LOSS":         ["idCard", "cardNumber"],
+    "LARGE_TRANSFER":    ["idCard", "payeeName", "payeeAccount", "amount"],
+    "DEPOSIT":           ["amount", "depositMethod"],
+    "LOAN_APPLICATION":  ["idCard", "incomeProof", "employer", "amount", "loanTerm"],
+    "WEALTH_MGMT":       ["idCard", "riskAssessment", "investAmount"],
+}
+
 
 @dataclass
 class Settings:
@@ -42,10 +53,14 @@ class Settings:
     heatmap_cache_ttl: int = int(os.getenv("HEATMAP_CACHE_TTL", "86400"))  # 1 天
     heatmap_seed_base: int = int(os.getenv("HEATMAP_SEED_BASE", "42"))
 
+    # 材料预检
+    business_materials: dict = field(default_factory=lambda: BUSINESS_MATERIALS)
+
     # AI 错误码段位 6xxxx
     err_param = 60001
     err_redis = 60002
     err_predict = 60003
+    err_unknown_business = 60004
     err_internal = 60099
 
 
