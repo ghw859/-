@@ -20,6 +20,19 @@ public class BusinessException extends RuntimeException {
     }
 
     /**
+     * 接收ResultCode构造
+     */
+    public BusinessException(ResultCode resultCode) {
+        super(resultCode.getMsg());
+        this.code = resultCode.getCode();
+    }
+
+    public BusinessException(ResultCode resultCode, String message) {
+        super(message);
+        this.code = resultCode.getCode();
+    }
+
+    /**
      * 常用错误码快捷方法
      */
     public static BusinessException paramError(String msg) {
