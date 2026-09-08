@@ -24,6 +24,9 @@ public class User {
 
     private String phone;
 
+    /** 用户头像 URL */
+    private String avatar;
+
     /** 角色: CUSTOMER/AUDITOR/RISK/ADMIN */
     private String role;
 

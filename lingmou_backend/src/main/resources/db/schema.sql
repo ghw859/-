@@ -20,6 +20,7 @@ CREATE TABLE users (
     real_name       VARCHAR(50) COMMENT '真实姓名',
     id_card         VARCHAR(18) COMMENT '身份证号',
     phone           VARCHAR(20) COMMENT '手机号',
+    avatar          VARCHAR(255) COMMENT '头像URL',
     role            VARCHAR(20) DEFAULT 'CUSTOMER' COMMENT '角色: CUSTOMER/AUDITOR/RISK/ADMIN',
     customer_level  VARCHAR(20) DEFAULT 'NORMAL' COMMENT '客户级别: NORMAL/SILVER/GOLD',
     credit_score    INT DEFAULT 100 COMMENT '信用分',
@@ -38,15 +39,18 @@ CREATE TABLE users (
 DROP TABLE IF EXISTS branches;
 CREATE TABLE branches (
     id              BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '网点ID',
+    branch_code     VARCHAR(10) UNIQUE NOT NULL COMMENT '网点编码：BJ01/SH01/SZ01/HZ01',
     name            VARCHAR(100) NOT NULL COMMENT '网点名称',
     address         VARCHAR(200) COMMENT '网点地址',
     business_hours  VARCHAR(50) DEFAULT '09:00-17:00' COMMENT '营业时间',
     current_queue   INT DEFAULT 0 COMMENT '当前排队人数',
     busy_level      VARCHAR(10) DEFAULT 'IDLE' COMMENT '繁忙程度: IDLE/MODERATE/BUSY',
+    cover_image     VARCHAR(255) COMMENT '网点封面图URL',
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted         TINYINT DEFAULT 0 COMMENT '逻辑删除',
     INDEX idx_name (name),
+    INDEX idx_branch_code (branch_code),
     INDEX idx_busy_level (busy_level)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='网点表';
 
@@ -103,6 +107,8 @@ CREATE TABLE pre_forms (
     business_type   VARCHAR(50) COMMENT '业务类型',
     raw_text        TEXT COMMENT '原始文本',
     parsed_json     TEXT COMMENT '解析后的JSON',
+    image_urls      TEXT COMMENT '上传的材料图片URL列表（JSON数组）',
+    signature_url   VARCHAR(255) COMMENT '签名图片URL',
     status          VARCHAR(20) DEFAULT 'DRAFT' COMMENT '状态: DRAFT/SUBMITTED/USED',
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -150,10 +156,10 @@ CREATE TABLE credit_records (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='信用分变更记录表';
 
 -- ============================================
--- 初始化网点种子数据
+-- 初始化网点种子数据（4个网点 + branch_code）
 -- ============================================
-INSERT INTO branches (name, address, business_hours, current_queue, busy_level) VALUES
-('工商银行北京西单支行', '北京市西城区西单北大街120号', '09:00-17:00', 0, 'IDLE'),
-('工商银行上海浦东支行', '上海市浦东新区世纪大道100号', '09:00-17:00', 0, 'IDLE'),
-('工商银行深圳南山支行', '深圳市南山区科技园南区高新南一道', '09:00-17:00', 0, 'IDLE'),
-('工商银行杭州西湖支行', '杭州市西湖区曙光路128号', '09:00-17:00', 0, 'IDLE');
+INSERT INTO branches (branch_code, name, address, business_hours, current_queue, busy_level) VALUES
+('BJ01', '工商银行北京西单支行', '北京市西城区西单北大街120号', '09:00-17:00', 0, 'IDLE'),
+('SH01', '工商银行上海浦东支行', '上海市浦东新区世纪大道100号', '09:00-17:00', 0, 'IDLE'),
+('SZ01', '工商银行深圳南山支行', '深圳市南山区科技园南区高新南一道', '09:00-17:00', 0, 'IDLE'),
+('HZ01', '工商银行杭州西湖支行', '杭州市西湖区曙光路128号', '09:00-17:00', 0, 'IDLE');

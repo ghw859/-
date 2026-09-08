@@ -14,6 +14,9 @@ public class Branch {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    /** 网点编码，如 BJ01/SH01/SZ01/HZ01 */
+    private String branchCode;
+
     private String name;
 
     private String address;
@@ -26,6 +29,9 @@ public class Branch {
 
     /** 繁忙程度: IDLE/MODERATE/BUSY */
     private String busyLevel;
+
+    /** 网点封面图 URL */
+    private String coverImage;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

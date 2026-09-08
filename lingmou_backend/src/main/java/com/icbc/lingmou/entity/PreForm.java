@@ -25,6 +25,12 @@ public class PreForm {
     /** 解析后的JSON */
     private String parsedJson;
 
+    /** 上传的材料图片URL列表（JSON数组字符串） */
+    private String imageUrls;
+
+    /** 签名图片 URL */
+    private String signatureUrl;
+
     /** 状态: DRAFT/SUBMITTED/USED */
     private String status;
 

@@ -29,6 +29,12 @@ spring:
   profiles:
     active: local    # ← 默认加载application-local.yml
 
+  # Spring Boot 文件上传
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 20MB
+
 # MyBatis-Plus配置
 mybatis-plus:
   mapper-locations: classpath:/mapper/**/*.xml
@@ -59,6 +65,15 @@ springdoc:
   api-docs:
     path: /v3/api-docs
   packages-to-scan: com.icbc.lingmou.controller
+
+# AI Python 服务地址
+lingmou:
+  ai:
+    base-url: ${AI_BASE_URL:http://localhost:8000}
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}       # 上传文件存储目录（项目根目录下 uploads/）
+    max-size: 5242880                   # 单文件最大 5MB
+    allowed-types: image/jpeg,image/png,image/gif,image/webp,application/pdf
 
 # 日志配置
 logging:

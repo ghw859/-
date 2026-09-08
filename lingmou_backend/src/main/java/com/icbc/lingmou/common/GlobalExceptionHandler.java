@@ -12,7 +12,9 @@ import java.util.stream.Collectors;
 
 /**
  * 全局异常处理器
- * 统一捕获异常，返回规范的Result格式
+ * 统一捕获异常，返回规范的 Result 格式
+ *
+ * 错误码段位：用户 1xxxx / 预约 2xxxx / 网点 3xxxx / 预填单 4xxxx / 审计 5xxxx / AI 6xxxx / 系统 9xxxx
  */
 @Slf4j
 @RestControllerAdvice
@@ -36,7 +38,7 @@ public class GlobalExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining("; "));
         log.warn("参数校验失败: {}", msg);
-        return Result.error(1001, msg);
+        return Result.error(ResultCode.PARAM_ERROR.getCode(), msg);
     }
 
     /**
@@ -48,7 +50,7 @@ public class GlobalExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining("; "));
         log.warn("参数绑定失败: {}", msg);
-        return Result.error(1001, msg);
+        return Result.error(ResultCode.PARAM_ERROR.getCode(), msg);
     }
 
     /**
@@ -60,7 +62,7 @@ public class GlobalExceptionHandler {
                 .map(v -> v.getMessage())
                 .collect(Collectors.joining("; "));
         log.warn("约束校验失败: {}", msg);
-        return Result.error(1001, msg);
+        return Result.error(ResultCode.PARAM_ERROR.getCode(), msg);
     }
 
     /**
@@ -69,6 +71,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public Result<?> handleException(Exception e) {
         log.error("系统异常: ", e);
-        return Result.error(5000, "系统繁忙，请稍后重试");
+        return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "系统繁忙，请稍后重试");
     }
 }

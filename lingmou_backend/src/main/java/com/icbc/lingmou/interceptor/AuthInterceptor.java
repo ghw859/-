@@ -1,6 +1,7 @@
 package com.icbc.lingmou.interceptor;
 
 import com.icbc.lingmou.common.BusinessException;
+import com.icbc.lingmou.common.ResultCode;
 import com.icbc.lingmou.config.JwtConfig;
 import com.icbc.lingmou.utils.JwtUtils;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,12 +32,12 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         String authHeader = request.getHeader(jwtConfig.getHeader());
         if (authHeader == null || !authHeader.startsWith(jwtConfig.getTokenPrefix())) {
-            throw new BusinessException(1002, "未登录或登录已过期");
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
         }
 
         String token = authHeader.substring(jwtConfig.getTokenPrefix().length()).trim();
         if (!jwtUtils.isTokenValid(token)) {
-            throw new BusinessException(1108, "Token无效或已过期");
+            throw new BusinessException(ResultCode.TOKEN_INVALID);
         }
 
         // 提取用户信息放入request，后续Controller可用 request.getAttribute("userId") 获取
