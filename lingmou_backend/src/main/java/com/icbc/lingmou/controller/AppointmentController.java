@@ -1,8 +1,10 @@
 package com.icbc.lingmou.controller;
 
 import com.icbc.lingmou.common.Result;
+import com.icbc.lingmou.dto.request.AppointmentHistoryRequest;
 import com.icbc.lingmou.dto.request.AppointmentRequest;
 import com.icbc.lingmou.dto.response.AppointmentResponse;
+import com.icbc.lingmou.dto.response.PageResponse;
 import com.icbc.lingmou.service.AppointmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -80,5 +82,15 @@ public class AppointmentController {
         Long userId = (Long) httpRequest.getAttribute("userId");
         AppointmentResponse response = appointmentService.advanceProgress(id, userId);
         return Result.success("进度已推进", response);
+    }
+
+    @Operation(summary = "历史预约查询", description = "分页+多条件查询历史预约")
+    @GetMapping("/history")
+    public Result<PageResponse<AppointmentResponse>> getHistory(
+            @ModelAttribute AppointmentHistoryRequest request,
+            HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        PageResponse<AppointmentResponse> response = appointmentService.getHistory(userId, request);
+        return Result.success(response);
     }
 }

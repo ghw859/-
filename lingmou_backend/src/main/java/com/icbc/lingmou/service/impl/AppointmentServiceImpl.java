@@ -1,10 +1,14 @@
 package com.icbc.lingmou.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.icbc.lingmou.common.BusinessException;
 import com.icbc.lingmou.common.ResultCode;
+import com.icbc.lingmou.dto.request.AppointmentHistoryRequest;
 import com.icbc.lingmou.dto.request.AppointmentRequest;
 import com.icbc.lingmou.dto.response.AppointmentResponse;
+import com.icbc.lingmou.dto.response.PageResponse;
 import com.icbc.lingmou.entity.Appointment;
 import com.icbc.lingmou.entity.Branch;
 import com.icbc.lingmou.mapper.AppointmentMapper;
@@ -14,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -227,6 +232,51 @@ public class AppointmentServiceImpl implements AppointmentService {
      */
     private String generateVoucherNum() {
         return "V" + System.currentTimeMillis();
+    }
+
+    @Override
+    public PageResponse<AppointmentResponse> getHistory(Long userId, AppointmentHistoryRequest request) {
+        int pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
+        int pageSize = request.getPageSize() != null ? request.getPageSize() : 10;
+
+        LambdaQueryWrapper<Appointment> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Appointment::getUserId, userId); // 强制按userId过滤
+
+        if (request.getBranchId() != null) {
+            wrapper.eq(Appointment::getBranchId, request.getBranchId());
+        }
+        if (StringUtils.hasText(request.getBusinessType())) {
+            wrapper.eq(Appointment::getBusinessType, request.getBusinessType());
+        }
+        if (StringUtils.hasText(request.getStatus())) {
+            wrapper.eq(Appointment::getStatus, request.getStatus());
+        }
+        if (request.getStartDate() != null) {
+            wrapper.ge(Appointment::getAppointmentDate, request.getStartDate());
+        }
+        if (request.getEndDate() != null) {
+            wrapper.le(Appointment::getAppointmentDate, request.getEndDate());
+        }
+
+        wrapper.orderByDesc(Appointment::getCreatedAt);
+
+        IPage<Appointment> page = new Page<>(pageNum, pageSize);
+        IPage<Appointment> result = appointmentMapper.selectPage(page, wrapper);
+
+        long total = result.getTotal();
+        int totalPages = (int) Math.ceil((double) total / pageSize);
+
+        return PageResponse.<AppointmentResponse>builder()
+            .pageNum(pageNum)
+            .pageSize(pageSize)
+            .total(total)
+            .totalPages(totalPages)
+            .records(result.getRecords().stream().map(apt -> {
+                Branch branch = branchMapper.selectById(apt.getBranchId());
+                String branchName = branch != null ? branch.getName() : "";
+                return toResponse(apt, branchName);
+            }).toList())
+            .build();
     }
 
     /**
