@@ -88,7 +88,11 @@ class Settings:
     err_predict = 60003
     err_unknown_business = 60004
     err_parse_failed = 60005
+    err_diagnosis = 60006
     err_internal = 60099
+
+    # Java 后端地址（Day 6 起可选调用；无鉴权时不调用）
+    java_backend_url: str = os.getenv("JAVA_BACKEND_URL", "http://localhost:8080")
 
 
 settings = Settings()

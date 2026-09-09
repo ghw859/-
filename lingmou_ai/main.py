@@ -10,6 +10,7 @@ from routers.chat import router as chat_router
 from routers.heatmap import router as heatmap_router
 from routers.precheck import router as precheck_router
 from routers.parse_preform import router as parse_preform_router
+from routers.diagnosis import router as diagnosis_router
 from services.llm_client import llm_client
 from services.redis_client import redis_client
 
@@ -33,6 +34,7 @@ app.include_router(chat_router)
 app.include_router(heatmap_router)
 app.include_router(precheck_router)
 app.include_router(parse_preform_router)
+app.include_router(diagnosis_router)
 
 
 @app.on_event("startup")

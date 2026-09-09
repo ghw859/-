@@ -123,8 +123,10 @@ def _extract_amount(text: str) -> Optional[int]:
             cm = _AMOUNT_CN_RE.match(tail)
             if cm:
                 cn_str = cm.group(1)
+                # 剥掉货币单位后缀（"五万元"→"五万"），否则 cn2num 校验失败
+                cn_str = cn_str.rstrip("元块整")
                 # 必须含至少一个中文数字字符
-                if any(c in _CN_NUM or c in _CN_UNIT for c in cn_str):
+                if cn_str and any(c in _CN_NUM or c in _CN_UNIT for c in cn_str):
                     n = cn2num(cn_str)
                     if n and n > 0:
                         return n
