@@ -7,6 +7,7 @@ load_dotenv()
 
 from routers.health import router as health_router
 from routers.chat import router as chat_router
+from routers.chat_ws import router as chat_ws_router
 from routers.heatmap import router as heatmap_router
 from routers.precheck import router as precheck_router
 from routers.parse_preform import router as parse_preform_router
@@ -30,7 +31,8 @@ app.add_middleware(
 
 # 注册路由
 app.include_router(health_router)
-app.include_router(chat_router)
+app.include_router(chat_router)        # Day 2 HTTP POST /api/ai/chat
+app.include_router(chat_ws_router)     # Day 7 WebSocket /api/ai/chat/ws
 app.include_router(heatmap_router)
 app.include_router(precheck_router)
 app.include_router(parse_preform_router)
