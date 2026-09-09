@@ -55,8 +55,10 @@ public class AuthInterceptor implements HandlerInterceptor {
         // 提取用户信息放入request，后续Controller可用 request.getAttribute("userId") 获取
         Long userId = jwtUtils.getUserIdFromToken(token);
         String username = jwtUtils.getUsernameFromToken(token);
+        String role = jwtUtils.getRoleFromToken(token);
         request.setAttribute("userId", userId);
         request.setAttribute("username", username);
+        request.setAttribute("role", role);
 
         return true;
     }

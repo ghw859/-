@@ -30,12 +30,14 @@ public class JwtUtils {
      *
      * @param userId   用户ID
      * @param username 用户名
+     * @param role     用户角色
      * @return Token字符串
      */
-    public String generateToken(Long userId, String username) {
+    public String generateToken(Long userId, String username, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("username", username);
+        claims.put("role", role);
 
         Date now = new Date();
         Date expiration = new Date(now.getTime() + jwtConfig.getExpiration());
@@ -80,6 +82,15 @@ public class JwtUtils {
         Claims claims = parseToken(token);
         if (claims == null) return null;
         return claims.get("username", String.class);
+    }
+
+    /**
+     * 从Token中获取用户角色
+     */
+    public String getRoleFromToken(String token) {
+        Claims claims = parseToken(token);
+        if (claims == null) return null;
+        return claims.get("role", String.class);
     }
 
     /**

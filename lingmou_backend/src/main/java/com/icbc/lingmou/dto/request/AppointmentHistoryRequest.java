@@ -35,4 +35,7 @@ public class AppointmentHistoryRequest {
 
     @Schema(description = "每页大小", example = "10")
     private Integer pageSize = 10;
+
+    @Schema(description = "简化模式：只返回状态概览（id+status+progressStep+businessType+appointmentDate+branchName）")
+    private Boolean simple;
 }

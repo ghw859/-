@@ -49,7 +49,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 生成Token
-        String token = jwtUtils.generateToken(user.getId(), user.getUsername());
+        String token = jwtUtils.generateToken(user.getId(), user.getUsername(), user.getRole());
 
         return buildAuthResponse(user, token);
     }
@@ -77,7 +77,7 @@ public class AuthServiceImpl implements AuthService {
         user = userService.register(user);
 
         // 生成Token
-        String token = jwtUtils.generateToken(user.getId(), user.getUsername());
+        String token = jwtUtils.generateToken(user.getId(), user.getUsername(), user.getRole());
 
         return buildAuthResponse(user, token);
     }
