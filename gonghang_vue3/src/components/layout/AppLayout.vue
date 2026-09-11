@@ -4,19 +4,22 @@ import Header from './Header.vue'
 import AINavButton from '../ai/AINavButton.vue'
 import { useElderlyStore } from '../../stores/elderly'
 import { useAppointmentStore } from '../../stores/appointment'
+import { useBranchStore } from '../../stores/branch'
 import { onMounted, ref, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 
 const elderly = useElderlyStore()
 const appointment = useAppointmentStore()
+const branchStore = useBranchStore()
 const route = useRoute()
 const mainRef = ref<HTMLElement | null>(null)
 
 onMounted(() => {
   elderly.init()
-  // 加载后端预约数据 + 信用分
+  // 加载后端数据：预约列表 + 信用分 + 网点真实数据
   appointment.fetchMy().catch(() => {})
   appointment.fetchCredit().catch(() => {})
+  branchStore.fetchBranches().catch(() => {})
 })
 
 // 路由切换时滚动到顶部

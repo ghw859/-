@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import api from '@/api'
+import request from '@/utils/request'
 
 export interface UserInfo {
   id: number
@@ -20,7 +20,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function login(user: string, pwd: string) {
     if (!user || !pwd) throw new Error('请输入账号和密码')
-    const data = await api.post('/auth/login', { username: user, password: pwd })
+    const data = await request.post('/api/auth/login', { username: user, password: pwd })
     localStorage.setItem('lingmou_token', data.token)
     localStorage.setItem('lingmou_logged_in', 'true')
     localStorage.setItem('lingmou_username', data.userInfo.username)
@@ -31,7 +31,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function register(payload: { phone: string; password: string; realName: string; idCard: string }) {
     // 后端要求 username 唯一，用手机号作为用户名
-    const data = await api.post('/auth/register', {
+    const data = await request.post('/api/auth/register', {
       username: payload.phone,
       password: payload.password,
       realName: payload.realName,
@@ -48,7 +48,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout() {
     try {
-      await api.post('/auth/logout')
+      await request.post('/api/auth/logout')
     } catch {
       // 即使后端登出失败也要清本地状态
     }

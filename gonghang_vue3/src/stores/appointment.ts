@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import api from '@/api'
+import request from '@/utils/request'
 
 export type ApptStatus = 'virtual' | 'active' | 'expired' | 'completed'
 
@@ -65,14 +65,14 @@ export const useAppointmentStore = defineStore('appointment', () => {
 
   /** 从后端加载我的预约列表 */
   async function fetchMy() {
-    const data = await api.get('/appointments/my')
+    const data = await request.get('/api/appointments/my')
     appointments.value = (data as any[]).map(mapAppointment)
     loaded.value = true
   }
 
   /** 从后端加载信用分 */
   async function fetchCredit() {
-    const data = await api.get('/credit')
+    const data = await request.get('/api/credit')
     creditScore.value = data.creditScore ?? 100
   }
 
@@ -88,7 +88,7 @@ export const useAppointmentStore = defineStore('appointment', () => {
     timeSlot: string   // 09:00-09:30
     businessType: string
   }): Promise<Appointment> {
-    const raw = await api.post('/appointments', {
+    const raw = await request.post('/api/appointments', {
       branchId: data.branchId,
       businessType: data.businessType,
       appointmentDate: data.date,
@@ -105,7 +105,7 @@ export const useAppointmentStore = defineStore('appointment', () => {
     const appt = appointments.value.find(a => a.voucherNum === voucherNum)
     if (!appt) return
     if (appt.id) {
-      await api.delete(`/appointments/${appt.id}`)
+      await request.delete(`/api/appointments/${appt.id}`)
     }
     const idx = appointments.value.findIndex(a => a.voucherNum === voucherNum)
     if (idx > -1) appointments.value.splice(idx, 1)
@@ -123,7 +123,7 @@ export const useAppointmentStore = defineStore('appointment', () => {
 
     if (status === 'active' && appt.status === 'virtual' && appt.id) {
       // 取号报到 = 推进一步进度
-      const raw = await api.put(`/appointments/${appt.id}/progress`)
+      const raw = await request.put(`/api/appointments/${appt.id}/progress`)
       Object.assign(appt, mapAppointment(raw))
       return
     }
@@ -137,7 +137,7 @@ export const useAppointmentStore = defineStore('appointment', () => {
     const appt = appointments.value.find(a => a.voucherNum === voucherNum)
     if (!appt || !appt.id) return
 
-    const raw = await api.put(`/appointments/${appt.id}/progress`)
+    const raw = await request.put(`/api/appointments/${appt.id}/progress`)
     Object.assign(appt, mapAppointment(raw))
 
     // 办理完成时后端自动+3分，同步信用分
