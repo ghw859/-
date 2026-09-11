@@ -16,14 +16,14 @@ onMounted(() => {
   elderly.init()
 })
 
-function handleLogin() {
+async function handleLogin() {
   errorMsg.value = ''
   if (!username.value || !password.value) {
     errorMsg.value = '请输入账号和密码'
     return
   }
   try {
-    auth.login(username.value, password.value)
+    await auth.login(username.value, password.value)
     router.push('/')
   } catch (e: any) {
     errorMsg.value = e.message

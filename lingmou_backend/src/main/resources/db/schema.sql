@@ -34,18 +34,29 @@ CREATE TABLE users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 -- ============================================
--- 2. 网点表
+-- 2. 网点表（字段对齐前端 branch.ts interface Branch）
 -- ============================================
 DROP TABLE IF EXISTS branches;
 CREATE TABLE branches (
-    id              BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '网点ID',
-    branch_code     VARCHAR(10) UNIQUE NOT NULL COMMENT '网点编码：BJ01/SH01/SZ01/HZ01',
+    id              BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '网点ID(内部主键1-6)',
+    branch_code     VARCHAR(10) UNIQUE NOT NULL COMMENT '网点编码：b1~b6（前端id）',
     name            VARCHAR(100) NOT NULL COMMENT '网点名称',
     address         VARCHAR(200) COMMENT '网点地址',
-    business_hours  VARCHAR(50) DEFAULT '09:00-17:00' COMMENT '营业时间',
-    current_queue   INT DEFAULT 0 COMMENT '当前排队人数',
-    busy_level      VARCHAR(10) DEFAULT 'IDLE' COMMENT '繁忙程度: IDLE/MODERATE/BUSY',
+    phone           VARCHAR(20) COMMENT '联系电话',
+    hours           VARCHAR(50) DEFAULT '09:00 - 17:00' COMMENT '营业时间',
+    distance        INT DEFAULT 0 COMMENT '距离(米)',
+    services        TEXT COMMENT '业务标签数组JSON，如["大额现金","外汇"]',
+    wait_time       INT DEFAULT 0 COMMENT '等待时间(分钟)',
+    flow_count      INT DEFAULT 0 COMMENT '在店人数',
+    reserve_count   INT DEFAULT 0 COMMENT '线上预约人数',
+    window_info     VARCHAR(20) COMMENT '窗口信息如8/10',
+    trend           TEXT COMMENT '人流趋势数组JSON如[18,22,28]',
+    busy_level      VARCHAR(10) DEFAULT 'free' COMMENT '繁忙程度: free/moderate/busy',
     cover_image     VARCHAR(255) COMMENT '网点封面图URL',
+    icon            VARCHAR(100) COMMENT '图标class如fa-solid fa-landmark',
+    icon_bg         VARCHAR(50) COMMENT '图标背景class如bg-blue-50',
+    icon_color      VARCHAR(50) COMMENT '图标颜色class如text-blue-600',
+    favorite        TINYINT DEFAULT 0 COMMENT '收藏: 0-否 1-是',
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted         TINYINT DEFAULT 0 COMMENT '逻辑删除',
@@ -156,10 +167,12 @@ CREATE TABLE credit_records (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='信用分变更记录表';
 
 -- ============================================
--- 初始化网点种子数据（4个网点 + branch_code）
+-- 初始化网点种子数据（6个北京网点，逐字对齐前端 branch.ts）
 -- ============================================
-INSERT INTO branches (branch_code, name, address, business_hours, current_queue, busy_level) VALUES
-('BJ01', '工商银行北京西单支行', '北京市西城区西单北大街120号', '09:00-17:00', 0, 'IDLE'),
-('SH01', '工商银行上海浦东支行', '上海市浦东新区世纪大道100号', '09:00-17:00', 0, 'IDLE'),
-('SZ01', '工商银行深圳南山支行', '深圳市南山区科技园南区高新南一道', '09:00-17:00', 0, 'IDLE'),
-('HZ01', '工商银行杭州西湖支行', '杭州市西湖区曙光路128号', '09:00-17:00', 0, 'IDLE');
+INSERT INTO branches (branch_code, name, busy_level, distance, services, wait_time, flow_count, reserve_count, window_info, trend, address, phone, hours, icon, icon_bg, icon_color, favorite) VALUES
+('b1', '北京分行营业部',         'busy',     850,  '["大额现金","外汇","无障碍"]', 25, 42, 18, '8/10', '[18,22,28,20,25,25]', '北京市西城区复兴门内大街55号',              '010-66695588', '09:00 - 17:00', 'fa-solid fa-landmark',   'bg-blue-50',    'text-blue-600',    0),
+('b2', '长安街智慧示范支行',     'moderate', 1400, '["自助发卡","VTM"]',           8, 19,  7, '5/6',  '[12,10,6,9,7,8]',    '北京市东城区东长安街1号',                  '010-65129588', '09:00 - 17:00', 'fa-solid fa-robot',      'bg-cyan-50',    'text-cyan-600',    0),
+('b3', '金融街私人银行旗舰支行', 'free',     2100, '["VIP"]',                       3,  8,  3, '6/6',  '[5,4,3,2,3,3]',      '北京市西城区金融大街15号',                  '010-66299588', '09:00 - 17:30', 'fa-solid fa-crown',      'bg-emerald-50', 'text-emerald-600', 0),
+('b4', '中关村科技创新特色支行', 'moderate', 3800, '["对公"]',                      12, 25, 12, '6/8',  '[8,15,10,14,11,12]', '北京市海淀区中关村大街22号',                '010-62599588', '09:00 - 17:00', 'fa-solid fa-microchip',  'bg-purple-50', 'text-purple-600', 0),
+('b5', '望京SOHO社区支行',       'free',     3200, '["自助发卡","无障碍"]',          5, 10,  4, '4/4',  '[8,6,4,7,5,5]',      '北京市朝阳区望京街10号望京SOHO塔1座',       '010-59799588', '09:00 - 17:00', 'fa-solid fa-shop',       'bg-emerald-50', 'text-emerald-600', 0),
+('b6', '国贸CBD中心支行',        'busy',     1800, '["外汇","VIP","对公"]',          20, 38, 15, '7/8',  '[15,18,22,17,20,20]', '北京市朝阳区建国门外大街1号国贸大厦',         '010-65059588', '09:00 - 17:00', 'fa-solid fa-city',       'bg-blue-50',    'text-blue-600',    0);
