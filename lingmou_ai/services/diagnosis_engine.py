@@ -19,7 +19,11 @@ from services.llm_client import llm_client
 # ============ 画像合成 ============
 
 _BUSINESS_TYPES = ["开户", "挂失补卡", "大额取现", "转账汇款", "存款", "贷款申请", "理财咨询"]
-_BRANCH_NAMES = ["北京分行营业部", "上海陆家嘴支行", "深圳福田支行", "杭州西湖支行"]
+# Day 8：与前端 6 个北京网点保持同一业务场景
+_BRANCH_NAMES = [
+    "北京分行营业部", "长安街智慧示范支行", "金融街私人银行旗舰支行",
+    "中关村科技创新特色支行", "望京SOHO社区支行", "国贸CBD中心支行",
+]
 
 
 def _synthesize_profile(user_id: int) -> Dict[str, Any]:
@@ -230,3 +234,17 @@ async def generate_diagnosis(user_id: int) -> Dict[str, Any]:
         "generatedAt": datetime.now().isoformat(timespec="seconds"),
         "model": model_name,
     }
+
+
+def compose_text(result: Dict[str, Any]) -> str:
+    """Day 8：把内部结构化结果拼成一段纯文本，供前端打字机单段落渲染。
+
+    前端 aiDiagnosis 是单个 <p> 字符串逐字渲染，不接收列表、不识别换行，
+    因此对外只暴露 text，且内部用句号/分号连接，不含 \\n。
+    """
+    parts = [result["diagnosis"].rstrip("。") + "。"]
+    if result.get("highlights"):
+        parts.append("核心亮点：" + "；".join(result["highlights"]) + "。")
+    if result.get("suggestions"):
+        parts.append("优化建议：" + "；".join(result["suggestions"]) + "。")
+    return "".join(parts)

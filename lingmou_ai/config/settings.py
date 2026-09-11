@@ -3,12 +3,15 @@ import os
 from dataclasses import dataclass, field
 
 
-# 4 个网点种子数据（Day 3 硬编码占位，Day 8 联调时改由 Java /api/branches 拉取）
+# 6 个网点种子数据（Day 8 起严格对齐前端 OverviewView.vue 冻结契约：
+# 名称、顺序、status 三态必须与前端 branches 常量逐字一致，禁止改动）
 BRANCHES_SEED = [
-    {"id": 1, "name": "工行北京分行营业部", "busy_factor": 1.2},
-    {"id": 2, "name": "工行上海陆家嘴支行", "busy_factor": 1.0},
-    {"id": 3, "name": "工行深圳福田支行",   "busy_factor": 0.9},
-    {"id": 4, "name": "工行杭州西湖支行",   "busy_factor": 0.7},
+    {"id": 1, "name": "北京分行营业部",           "status": "busy",     "busy_factor": 1.20},
+    {"id": 2, "name": "长安街智慧示范支行",       "status": "moderate", "busy_factor": 1.00},
+    {"id": 3, "name": "金融街私人银行旗舰支行",   "status": "free",     "busy_factor": 0.70},
+    {"id": 4, "name": "中关村科技创新特色支行",   "status": "moderate", "busy_factor": 0.95},
+    {"id": 5, "name": "望京SOHO社区支行",         "status": "free",     "busy_factor": 0.75},
+    {"id": 6, "name": "国贸CBD中心支行",          "status": "busy",     "busy_factor": 1.15},
 ]
 
 # 24 时段基线客流（银行典型日形态）
