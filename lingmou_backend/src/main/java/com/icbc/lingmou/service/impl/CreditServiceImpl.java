@@ -114,4 +114,32 @@ public class CreditServiceImpl implements CreditService {
         if (score >= FAIR_THRESHOLD) return "FAIR";
         return "POOR";
     }
+
+    @Override
+    @Transactional
+    public void autoAdjust(Long userId, Integer amount, String reason) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            log.warn("autoAdjust: 用户不存在, userId={}", userId);
+            return;
+        }
+
+        Integer currentScore = user.getCreditScore() != null ? user.getCreditScore() : 100;
+        String changeType = amount >= 0 ? "ADD" : "DEDUCT";
+        int newScore = Math.max(MIN_SCORE, Math.min(MAX_SCORE, currentScore + amount));
+
+        CreditRecord record = new CreditRecord();
+        record.setUserId(userId);
+        record.setChangeType(changeType);
+        record.setAmount(amount);
+        record.setReason(reason);
+        record.setOperatorId(0L); // 0 = 系统自动
+        creditRecordMapper.insert(record);
+
+        user.setCreditScore(newScore);
+        userMapper.updateById(user);
+
+        log.info("信用分自动调整: userId={}, amount={}, reason={}, {}->{}",
+            userId, amount, reason, currentScore, newScore);
+    }
 }

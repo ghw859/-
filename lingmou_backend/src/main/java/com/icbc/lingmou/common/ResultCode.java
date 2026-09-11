@@ -23,6 +23,7 @@ public enum ResultCode {
     SMS_CODE_ERROR(11006, "验证码错误或已过期"),
     SMS_CODE_SEND_FAIL(11007, "验证码发送失败"),
     TOKEN_INVALID(11008, "Token无效"),
+    CREDIT_TOO_LOW(11009, "信用分过低，暂无法预约"),
 
     // ========== 预约管理模块（2xxxx） ==========
     APPOINTMENT_CONFLICT(20001, "该时段已在其他网点预约"),
