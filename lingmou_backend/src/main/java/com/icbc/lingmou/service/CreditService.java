@@ -13,7 +13,12 @@ public interface CreditService {
     CreditScoreResponse getCreditScore(Long userId);
 
     /**
-     * 调整用户信用分
+     * 调整用户信用分（管理员手动调用）
      */
     CreditScoreResponse adjustCredit(Long operatorId, Long targetUserId, Integer amount, String reason);
+
+    /**
+     * 系统自动调整信用分（业务规则触发，operatorId=0）
+     */
+    void autoAdjust(Long userId, Integer amount, String reason);
 }

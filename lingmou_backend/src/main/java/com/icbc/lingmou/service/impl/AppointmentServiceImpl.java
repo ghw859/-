@@ -11,9 +11,12 @@ import com.icbc.lingmou.dto.request.AppointmentRequest;
 import com.icbc.lingmou.dto.response.AppointmentResponse;
 import com.icbc.lingmou.entity.Appointment;
 import com.icbc.lingmou.entity.Branch;
+import com.icbc.lingmou.entity.User;
 import com.icbc.lingmou.mapper.AppointmentMapper;
 import com.icbc.lingmou.mapper.BranchMapper;
+import com.icbc.lingmou.mapper.UserMapper;
 import com.icbc.lingmou.service.AppointmentService;
+import com.icbc.lingmou.service.CreditService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,12 +39,25 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private final AppointmentMapper appointmentMapper;
     private final BranchMapper branchMapper;
+    private final UserMapper userMapper;
+    private final CreditService creditService;
 
     private static final int MAX_PER_SLOT = 10; // 每时段最多10人
+    private static final int CREDIT_LIMIT = 60; // 信用分低于60限制预约
 
     @Override
     @Transactional
     public AppointmentResponse createAppointment(Long userId, AppointmentRequest request) {
+        // 0. 检查信用分（低于阈值限制预约）
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ResultCode.USER_NOT_EXIST);
+        }
+        Integer creditScore = user.getCreditScore() != null ? user.getCreditScore() : 100;
+        if (creditScore < CREDIT_LIMIT) {
+            throw new BusinessException(ResultCode.CREDIT_TOO_LOW);
+        }
+
         // 1. 检查网点是否存在
         Branch branch = branchMapper.selectById(request.getBranchId());
         if (branch == null) {
@@ -139,6 +155,9 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         appointment.setStatus("CANCELED");
         appointmentMapper.updateById(appointment);
+
+        // 信用分规则：主动取消扣5分
+        creditService.autoAdjust(userId, -5, "预约取消");
     }
 
     @Override
@@ -218,7 +237,11 @@ public class AppointmentServiceImpl implements AppointmentService {
             case 1 -> appointment.setStatus("ACTIVE");
             case 2 -> appointment.setStatus("CALLED");
             case 3 -> appointment.setStatus("PROCESSING");
-            case 4 -> appointment.setStatus("COMPLETED");
+            case 4 -> {
+                appointment.setStatus("COMPLETED");
+                // 信用分规则：办理完成加3分
+                creditService.autoAdjust(userId, 3, "预约办理完成");
+            }
         }
 
         appointmentMapper.updateById(appointment);
