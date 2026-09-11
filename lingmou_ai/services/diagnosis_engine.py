@@ -242,7 +242,7 @@ def compose_text(result: Dict[str, Any]) -> str:
     前端 aiDiagnosis 是单个 <p> 字符串逐字渲染，不接收列表、不识别换行，
     因此对外只暴露 text，且内部用句号/分号连接，不含 \\n。
     """
-    parts = [result["diagnosis"].rstrip("。") + "。"]
+    parts = [result["diagnosis"].replace("\n", "").replace("\r", "").rstrip("。！!？? ") + "。"]
     if result.get("highlights"):
         parts.append("核心亮点：" + "；".join(result["highlights"]) + "。")
     if result.get("suggestions"):
