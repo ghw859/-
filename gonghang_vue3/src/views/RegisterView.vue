@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 import { useElderlyStore } from '../stores/elderly'
 
 const router = useRouter()
+const auth = useAuthStore()
 const elderly = useElderlyStore()
 
 const form = ref({
@@ -20,7 +22,7 @@ onMounted(() => {
   elderly.init()
 })
 
-function handleRegister() {
+async function handleRegister() {
   errorMsg.value = ''
   successMsg.value = ''
 
@@ -45,10 +47,20 @@ function handleRegister() {
     return
   }
 
-  successMsg.value = '注册成功！即将跳转到登录页...'
-  setTimeout(() => {
-    router.push('/login')
-  }, 1500)
+  try {
+    await auth.register({
+      phone: form.value.phone,
+      password: form.value.password,
+      realName: form.value.name,
+      idCard: form.value.idCard,
+    })
+    successMsg.value = '注册成功！即将进入系统...'
+    setTimeout(() => {
+      router.push('/')
+    }, 1500)
+  } catch (e: any) {
+    errorMsg.value = e.message
+  }
 }
 
 function backToLogin() {

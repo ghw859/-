@@ -339,9 +339,10 @@ function deleteSelectedAppts() {
   }
   const count = selectedApptSet.value.size
   if (!confirm(`确定删除选中的 ${count} 条预约吗？此操作不可撤销。`)) return
-  selectedApptSet.value.forEach(v => appt.cancel(v))
+  Promise.all([...selectedApptSet.value].map(v => appt.cancel(v)))
+    .then(() => showToast(`已删除 ${count} 条预约`))
+    .catch((e: any) => showToast(e.message || '删除失败'))
   selectedApptSet.value = new Set()
-  showToast(`已删除 ${count} 条预约`)
 }
 
 // Toast通知
@@ -354,41 +355,42 @@ function showToast(msg: string) {
 }
 
 // 从我的预约列表中激活预约
-function activateFromList(voucherNum: string) {
+async function activateFromList(voucherNum: string) {
   const appointment = appt.appointments.find(a => a.voucherNum === voucherNum)
   if (!appointment || appointment.status !== 'virtual') return
-  if (appointment.voucherNum.startsWith('V')) {
-    appointment.voucherNum = 'A' + appointment.voucherNum.substring(1)
+  try {
+    await appt.updateStatus(appointment.voucherNum, 'active')
+    showToast('激活成功！' + voucherNum + ' 已转为红色预约号')
+  } catch (e: any) {
+    showToast(e.message || '激活失败')
   }
-  appt.updateStatus(appointment.voucherNum, 'active')
-  appt.addScore('activate')
-  showToast('激活成功！' + appointment.voucherNum + ' 已转为红色预约号')
 }
 
 // 从我的预约列表中取消预约
-function cancelFromList(voucherNum: string) {
+async function cancelFromList(voucherNum: string) {
   if (!confirm('确定取消此预约吗？')) return
-  appt.cancel(voucherNum)
-  showToast('预约已取消')
+  try {
+    await appt.cancel(voucherNum)
+    showToast('预约已取消')
+  } catch (e: any) {
+    showToast(e.message || '取消失败')
+  }
 }
 
-// 过期检测
+// 过期检测（兜底，后端定时任务已自动处理）
 function checkExpired() {
   const now = new Date()
   appt.appointments.forEach(a => {
     if (a.status === 'virtual') {
       try {
-        const dateMatch = a.date.match(/(\d+)月(\d+)日/)
-        if (dateMatch) {
-          const apptDate = new Date(now.getFullYear(), parseInt(dateMatch[1]) - 1, parseInt(dateMatch[2]))
-          const slotParts = a.timeSlot.split(' - ')
-          if (slotParts.length === 2) {
-            const endTime = slotParts[1].split(':')
-            apptDate.setHours(parseInt(endTime[0]), parseInt(endTime[1]), 0, 0)
-            if (now > apptDate) {
-              appt.updateStatus(a.voucherNum, 'expired')
-              appt.deductScore('expired')
-            }
+        // ISO格式: 2026-09-12
+        const apptDate = new Date(a.date + 'T00:00:00')
+        const slotParts = a.timeSlot.split('-')
+        if (slotParts.length === 2) {
+          const endTime = slotParts[1].split(':')
+          apptDate.setHours(parseInt(endTime[0]), parseInt(endTime[1]), 0, 0)
+          if (now > apptDate) {
+            a.status = 'expired'
           }
         }
       } catch (e) { /* ignore parse errors */ }
@@ -576,29 +578,36 @@ function onBizTypeChange() {
   renderTimeSlots()
 }
 
+// 前端网点ID → 后端网点ID 映射
+const BRANCH_ID_MAP: Record<string, number> = { b1: 1, b2: 2, b3: 3, b4: 4, b5: 1, b6: 2 }
+
 // 确认预约
-function confirmBooking() {
+async function confirmBooking() {
   if (selectedSlotIdx.value < 0) return
   if (!bookingBranch.value) return
 
-  const num = 'V' + Math.floor(100 + Math.random() * 900)
+  const branchId = BRANCH_ID_MAP[bookingBranch.value.id] || 1
   const d = new Date()
   d.setDate(d.getDate() + selectedDateOffset.value)
-  const dateStr = `${d.getMonth() + 1}月${d.getDate()}日`
+  const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   const slot = slotData.value[selectedSlotIdx.value]
-  const slotText = `${slot.start} - ${slot.end}`
+  const slotText = `${slot.start}-${slot.end}`
   const bizText = bizOptions.find(o => o.value === selectedBizType.value)?.label || '-'
 
-  appt.book({
-    branchName: bookingBranch.value.name,
-    date: dateStr,
-    timeSlot: slotText,
-    businessType: bizText,
-  })
-
-  voucherNum.value = num
-  voucherActivated.value = false
-  successModal.value = true
+  try {
+    const newAppt = await appt.book({
+      branchId,
+      branchName: bookingBranch.value.name,
+      date: dateStr,
+      timeSlot: slotText,
+      businessType: bizText,
+    })
+    voucherNum.value = newAppt.voucherNum || ('V' + Math.floor(100 + Math.random() * 900))
+    voucherActivated.value = false
+    successModal.value = true
+  } catch (e: any) {
+    showToast(e.message || '预约失败，请稍后重试')
+  }
 }
 
 // 激活预约

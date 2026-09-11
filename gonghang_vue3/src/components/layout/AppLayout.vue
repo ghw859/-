@@ -3,15 +3,20 @@ import Sidebar from './Sidebar.vue'
 import Header from './Header.vue'
 import AINavButton from '../ai/AINavButton.vue'
 import { useElderlyStore } from '../../stores/elderly'
+import { useAppointmentStore } from '../../stores/appointment'
 import { onMounted, ref, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 
 const elderly = useElderlyStore()
+const appointment = useAppointmentStore()
 const route = useRoute()
 const mainRef = ref<HTMLElement | null>(null)
 
 onMounted(() => {
   elderly.init()
+  // 加载后端预约数据 + 信用分
+  appointment.fetchMy().catch(() => {})
+  appointment.fetchCredit().catch(() => {})
 })
 
 // 路由切换时滚动到顶部

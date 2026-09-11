@@ -6,6 +6,7 @@ import router from '@/router'
  * - 自动注入 JWT Token
  * - 401 自动跳转登录页
  * - 统一错误处理
+ * - 响应拦截器已解包 { code, msg, data }，直接返回 data
  */
 const api = axios.create({
   baseURL: '/api',
@@ -47,5 +48,15 @@ api.interceptors.response.use(
     return Promise.reject(new Error(msg))
   },
 )
+
+// 类型声明：拦截器已解包，方法直接返回 data 的类型
+declare module 'axios' {
+  export interface AxiosInstance {
+    get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T>
+    post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T>
+    put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T>
+    delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T>
+  }
+}
 
 export default api
