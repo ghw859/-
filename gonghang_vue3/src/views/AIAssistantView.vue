@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, watch } from 'vue'
+import request from '../utils/request'
 
 interface ChatMsg {
   id: string
@@ -105,6 +106,33 @@ function useQuick(cmd: string) {
   sendMessage()
 }
 
+// Day8：多轮会话 ID（localStorage 持久化，刷新页面后续接 Redis 上下文）
+function getSessionId(): string {
+  let sid = localStorage.getItem('lingmou_ai_session')
+  if (!sid) {
+    sid = 'web_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)
+    localStorage.setItem('lingmou_ai_session', sid)
+  }
+  return sid
+}
+
+// Day8：改调 Python AI 服务 /api/ai/chat（多轮上下文 + 长文知识库）
+// 接口失败（服务未启动/网络异常/业务错误）时回退本地 getAIReply()，保证演示不中断
+async function fetchReply(query: string): Promise<string> {
+  try {
+    const data = await request.post<{ reply: string }>('/api/ai/chat', {
+      sessionId: getSessionId(),
+      message: query,
+    })
+    if (data && typeof data.reply === 'string' && data.reply.length > 0) {
+      return data.reply
+    }
+    return getAIReply(query)
+  } catch {
+    return getAIReply(query)
+  }
+}
+
 // 发送消息
 function sendMessage() {
   const query = inputMsg.value.trim()
@@ -140,11 +168,11 @@ function sendMessage() {
       setTimeout(renderNextStep, 450)
     } else {
       // 思维链完成，开始打字输出
-      setTimeout(() => {
+      setTimeout(async () => {
         const msg = messages.value.find(m => m.id === aiMsgId)
         if (msg) msg.hasCoT = false // 标记为淡化状态
 
-        const reply = getAIReply(query)
+        const reply = await fetchReply(query)
         let charIdx = 0
         const typingTimer = setInterval(() => {
           const m = messages.value.find(x => x.id === aiMsgId)

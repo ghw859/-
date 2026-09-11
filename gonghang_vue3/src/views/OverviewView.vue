@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAppointmentStore } from '../stores/appointment'
+import request from '../utils/request'
 
 const appt = useAppointmentStore()
 
@@ -123,6 +124,25 @@ function buildHeatmap() {
   heatmapTip.value = 'AI推荐：' + shortBranch + ' ' + globalMin.hour + '-' + bestEnd + ' 全网客流最低（仅' + globalMin.val + '%负载），建议此时段到店办理'
 }
 
+// Day8：热力图改调 Python AI 服务 /api/ai/heatmap（数据结构与本地 mock 完全同形，可直接赋值）
+// 接口失败（服务未启动/网络异常）时静默回退本地 buildHeatmap()，保证页面不白屏
+async function loadHeatmap() {
+  try {
+    const data = await request.get<{ rows: HeatRow[]; tip: string }>('/api/ai/heatmap', {
+      params: { date: 'today' },
+    })
+    if (data && Array.isArray(data.rows) && data.rows.length === 6) {
+      heatmapData.value = data.rows
+      heatmapTip.value = data.tip
+      return
+    }
+    // 返回结构异常 → 回退本地
+    buildHeatmap()
+  } catch {
+    buildHeatmap()
+  }
+}
+
 // 折线图切换（复刻 toggleLineChart）
 type ChartRange = 'half' | 'full'
 const chartRange = ref<ChartRange>('full')
@@ -179,7 +199,7 @@ function startTyping() {
 }
 
 onMounted(() => {
-  buildHeatmap()
+  loadHeatmap()
   startTyping()
 })
 
