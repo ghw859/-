@@ -39,21 +39,20 @@ public class AuditLogServiceImpl implements AuditLogService {
         AuditLog last = auditLogMapper.selectOne(
                 new LambdaQueryWrapper<AuditLog>()
                         .orderByDesc(AuditLog::getId)
-                        .last("LIMIT 1")
-        );
+                        .last("LIMIT 1"));
         String prevHash = (last != null) ? last.getHash() : GENESIS_HASH;
 
         String rawContent = content == null ? "" : content;
         String hash = sha256Hex(prevHash + operatorId + operatorName + action + rawContent);
 
-        AuditLog log = new AuditLog();
-        log.setOperatorId(operatorId);
-        log.setOperatorName(operatorName);
-        log.setAction(action);
-        log.setContent(rawContent);
-        log.setPrevHash(prevHash);
-        log.setHash(hash);
-        auditLogMapper.insert(log);
+        AuditLog auditLog = new AuditLog();
+        auditLog.setOperatorId(operatorId);
+        auditLog.setOperatorName(operatorName);
+        auditLog.setAction(action);
+        auditLog.setContent(rawContent);
+        auditLog.setPrevHash(prevHash);
+        auditLog.setHash(hash);
+        auditLogMapper.insert(auditLog);
 
         log.info("[审计] writeLog action={} operator={} hash={}", action, operatorName, hash.substring(0, 8));
     }
@@ -76,8 +75,7 @@ public class AuditLogServiceImpl implements AuditLogService {
     @Override
     public boolean verifyChain() {
         List<AuditLog> all = auditLogMapper.selectList(
-                new LambdaQueryWrapper<AuditLog>().orderByAsc(AuditLog::getId)
-        );
+                new LambdaQueryWrapper<AuditLog>().orderByAsc(AuditLog::getId));
         for (int i = 0; i < all.size(); i++) {
             AuditLog cur = all.get(i);
             String expectedPrev = (i == 0) ? GENESIS_HASH : all.get(i - 1).getHash();
@@ -98,33 +96,35 @@ public class AuditLogServiceImpl implements AuditLogService {
     /**
      * 将 Entity 转为 Response 并校验 hash 是否自洽
      */
-    private AuditLogResponse toResponseWithValidation(AuditLog log) {
-        boolean valid = validateHash(log);
+    private AuditLogResponse toResponseWithValidation(AuditLog auditLog) {
+        boolean valid = validateHash(auditLog);
         return AuditLogResponse.builder()
-                .id(log.getId())
-                .operatorId(log.getOperatorId())
-                .operatorName(log.getOperatorName())
-                .action(log.getAction())
-                .content(log.getContent())
-                .prevHash(log.getPrevHash())
-                .hash(log.getHash())
+                .id(auditLog.getId())
+                .operatorId(auditLog.getOperatorId())
+                .operatorName(auditLog.getOperatorName())
+                .action(auditLog.getAction())
+                .content(auditLog.getContent())
+                .prevHash(auditLog.getPrevHash())
+                .hash(auditLog.getHash())
                 .hashValid(valid)
-                .createdAt(log.getCreatedAt())
+                .createdAt(auditLog.getCreatedAt())
                 .build();
     }
 
     /**
-     * 校验单条记录的 hash 是否等于 SHA256(prevHash + operatorId + operatorName + action + content)
+     * 校验单条记录的 hash 是否等于 SHA256(prevHash + operatorId + operatorName + action +
+     * content)
      */
-    private boolean validateHash(AuditLog log) {
-        if (log.getHash() == null) return false;
-        String content = log.getContent() == null ? "" : log.getContent();
-        String expected = sha256Hex(log.getPrevHash()
-                + log.getOperatorId()
-                + log.getOperatorName()
-                + log.getAction()
+    private boolean validateHash(AuditLog auditLog) {
+        if (auditLog.getHash() == null)
+            return false;
+        String content = auditLog.getContent() == null ? "" : auditLog.getContent();
+        String expected = sha256Hex(auditLog.getPrevHash()
+                + auditLog.getOperatorId()
+                + auditLog.getOperatorName()
+                + auditLog.getAction()
                 + content);
-        return expected.equals(log.getHash());
+        return expected.equals(auditLog.getHash());
     }
 
     /**

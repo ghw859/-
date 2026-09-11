@@ -50,7 +50,8 @@ public class AiPrecheckServiceImpl implements AiPrecheckService {
                 throw new BusinessException(ResultCode.AI_SERVICE_ERROR, "AI预检服务返回异常");
             }
 
-            Map<?, ?> respBody = response.getBody();
+            @SuppressWarnings("unchecked")
+            Map<String, Object> respBody = response.getBody();
             Number code = (Number) respBody.get("code");
             Object data = respBody.get("data");
 
@@ -72,16 +73,19 @@ public class AiPrecheckServiceImpl implements AiPrecheckService {
 
             if (data instanceof Map<?, ?> d) {
                 Object p = d.get("passed");
-                if (p instanceof Boolean b) passed = b;
+                if (p instanceof Boolean b)
+                    passed = b;
 
                 Object m = d.get("missing");
                 if (m instanceof List<?> list) {
-                    for (Object item : list) missing.add(String.valueOf(item));
+                    for (Object item : list)
+                        missing.add(String.valueOf(item));
                 }
 
                 Object r = d.get("required");
                 if (r instanceof List<?> list) {
-                    for (Object item : list) required.add(String.valueOf(item));
+                    for (Object item : list)
+                        required.add(String.valueOf(item));
                 }
             }
 
