@@ -63,7 +63,14 @@ Day8 联调前以 `gonghang_vue3/src/views/OverviewView.vue`、`AIAssistantView.
 | `services/chat_engine.py` | 短模板 → 前端 17 条长文知识库（有序规则）；Day7 情感识别/LLM 双路径保留，降级也走长文 |
 | `routers/diagnosis.py` + `services/diagnosis_engine.py` | 对外仅 `data.text`；画像网点同步为北京 6 网点；缓存升 v2 |
 
-**未改动**：`parse-preform`（前端正则为主解析、Python 只兜底的红线不变）、`precheck`（Java 直通码流程在调，契约不动）、健康检查、WebSocket 路由、前端全部文件、Java 全部文件。
+**未改动**：`parse-preform`（前端正则为主解析、Python 只兜底的红线不变）、`precheck`（Java 直通码流程在调，契约不动）、健康检查、WebSocket 路由、前端模板与 mock 数据结构、Java 全部文件。
+
+### 前端（2 个文件，仅新增请求动作）
+
+| 文件 | 改动 |
+|---|---|
+| `gonghang_vue3/src/views/OverviewView.vue` | 新增 `loadHeatmap()` 调真实接口 + 失败回退 `buildHeatmap()`；onMounted 切换调用；import 统一请求层 |
+| `gonghang_vue3/src/views/AIAssistantView.vue` | 新增 `getSessionId()`/`fetchReply()`（POST chat + 失败回退本地话术）；打字回调改 async；思维链/打字机/快捷指令未动 |
 
 ---
 
@@ -152,12 +159,28 @@ Day8 联调前以 `gonghang_vue3/src/views/OverviewView.vue`、`AIAssistantView.
 
 ---
 
-## 七、前端仍需做的"接线"（数据结构零改动，仅发请求）
+## 七、前端接线（已完成 ✅，模板与数据结构零改动）
 
-前端代码本次完全未改。后端契约就绪后，前端只需在**不改模板/数据结构**的前提下补请求动作：
+接线于 2026-09-11 完成并通过浏览器端到端验证。**未改任何模板结构/mock 数据结构**，仅新增请求动作，原本地算法/知识库全部保留为降级兜底。
 
-1. **OverviewView.vue**：`onMounted` 里用 `fetch('/api/ai/heatmap?date=today')` 的 `data.rows` 直接赋给 `heatmapData`（字段同名同形），`data.tip` 赋给 `heatmapTip`；失败时保留现有 `buildHeatmap()` 本地兜底
-2. **AIAssistantView.vue**：`sendMessage()` 中把 `getAIReply(query)` 换成 `POST /api/ai/chat`（带 localStorage 里的 sessionId），把 `data.reply` 喂给现有打字机定时器；思维链动画保留；失败时回退本地 `getAIReply()`
-3. **诊断卡片**（Day9 批次）：取 `data.text` 赋给打字机源文本即可
+| 前端文件 | 改动 |
+|---|---|
+| `gonghang_vue3/src/views/OverviewView.vue` | 新增 `loadHeatmap()`：`onMounted` 改调 `GET /api/ai/heatmap?date=today`，`data.rows` 直接赋给 `heatmapData`、`data.tip` 赋给 `heatmapTip`（字段同名同形）；请求失败或结构异常时回退原 `buildHeatmap()` 本地算法 |
+| `gonghang_vue3/src/views/AIAssistantView.vue` | 新增 `getSessionId()`（sessionId 存 localStorage 键 `lingmou_ai_session`，刷新续接 Redis 上下文）+ `fetchReply()`：思维链动画后调 `POST /api/ai/chat`，`data.reply` 喂原打字机定时器；失败回退原 `getAIReply()` 本地知识库。思维链/打字机动画、快捷指令、欢迎语全部未动 |
 
-> 这三行接线属于前端工作范围，按约定未在本次提交中改动；后端已保证返回值可被现有模板直接消费。
+两处均复用队友已建的统一请求层 `src/utils/request.ts`（axios 拦截器自动注入 token、解包 `{code,msg,data}`），未裸写 fetch。
+
+**端到端验证证据（真实浏览器）**：
+
+- 真实链路（vite 5173 → proxy → Python 8010）：
+  - 热力图 `GET /api/ai/heatmap` 200，DOM 实测 **6 行 × 8 列 = 48 格**，行名/首行数值（93,100,75,43,48,66,70,44）与后端逐字一致，tip 正常显示
+  - 数字人 `POST /api/ai/chat` 200："附近哪个网点人少"→【AI网点推荐】127 字；"我想办卡"→【开户办卡指引】117 字；sessionId 自动生成（`web_<时间戳>_<随机>`）
+  - 控制台无 /api/ai/ 相关错误
+- 降级链路（故意停掉 Python 后端）：
+  - 热力图自动回退本地算法，仍渲染 48 格 + tip，**无白屏、无 alert**
+  - 数字人自动回退本地知识库，仍返回【AI网点推荐】长文，**无 alert、对话不中断**
+- 前端工程检查：`vue-tsc` 类型检查零错误，`vite build` 成功
+
+**剩余 Day9 接线（本次未做）**：诊断卡片取 `GET /api/ai/diagnosis` 的 `data.text` 赋给打字机源文本即可（后端已就绪）。
+
+> 本机联调备注：因 8000 被系统预留，验证时 Python 跑在 8010，用临时 vite 配置 `npx vite --config vite.tmp.config.ts` 覆盖 proxy target；该临时文件已删除，仓库中的 `vite.config.ts` 仍指向标准 8000，Docker/其他机器不受影响。
