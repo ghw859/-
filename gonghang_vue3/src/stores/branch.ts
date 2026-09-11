@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import request from '@/utils/request'
 
 export type BranchStatus = 'free' | 'moderate' | 'busy'
 
@@ -34,8 +35,25 @@ export const serviceTagText: Record<string, string> = {
   '无障碍': '无障碍绿色通道',
 }
 
+/** 后端繁忙度 → 前端状态 */
+function mapBusyLevel(level?: string): BranchStatus {
+  switch (level) {
+    case 'BUSY': return 'busy'
+    case 'MODERATE': return 'moderate'
+    case 'IDLE':
+    default: return 'free'
+  }
+}
+
+/** 前端网点ID → 后端网点ID 映射（预约提交时用） */
+const BRANCH_ID_MAP: Record<string, number> = { b1: 1, b2: 2, b3: 3, b4: 4, b5: 1, b6: 2 }
+
+export function toBackendBranchId(frontendId: string): number {
+  return BRANCH_ID_MAP[frontendId] || 1
+}
+
 export const useBranchStore = defineStore('branch', () => {
-  // 6 个网点数据（完整复刻原 HTML）
+  // 6 个网点数据（UI 展示字段保留 mock，真实字段由后端覆盖）
   const branches = ref<Branch[]>([
     {
       id: 'b1',
@@ -153,10 +171,32 @@ export const useBranchStore = defineStore('branch', () => {
     },
   ])
 
+  /**
+   * 从后端拉取网点真实数据，合并到本地列表
+   * 后端只有4个网点，按顺序覆盖前4个；UI专用字段（trend/icon/window等）保留 mock
+   */
+  async function fetchBranches() {
+    try {
+      const list = await request.get('/api/branches')
+      if (!Array.isArray(list)) return
+      list.slice(0, branches.value.length).forEach((raw: Record<string, any>, idx: number) => {
+        const local = branches.value[idx]
+        if (!local) return
+        if (raw.name) local.name = raw.name
+        if (raw.address) local.address = raw.address
+        if (raw.businessHours) local.hours = raw.businessHours.replace('-', ' - ')
+        if (raw.busyLevel) local.status = mapBusyLevel(raw.busyLevel)
+        if (raw.currentQueue !== undefined) local.flow = raw.currentQueue
+      })
+    } catch {
+      // 后端不可用时保留 mock 数据，不影响页面
+    }
+  }
+
   function toggleFavorite(id: string) {
     const b = branches.value.find(x => x.id === id)
     if (b) b.favorite = !b.favorite
   }
 
-  return { branches, toggleFavorite }
+  return { branches, fetchBranches, toggleFavorite, toBackendBranchId }
 })
