@@ -35,18 +35,8 @@ export const serviceTagText: Record<string, string> = {
   '无障碍': '无障碍绿色通道',
 }
 
-/** 后端繁忙度 → 前端状态 */
-function mapBusyLevel(level?: string): BranchStatus {
-  switch (level) {
-    case 'BUSY': return 'busy'
-    case 'MODERATE': return 'moderate'
-    case 'IDLE':
-    default: return 'free'
-  }
-}
-
-/** 前端网点ID → 后端网点ID 映射（预约提交时用） */
-const BRANCH_ID_MAP: Record<string, number> = { b1: 1, b2: 2, b3: 3, b4: 4, b5: 1, b6: 2 }
+/** 前端网点ID → 后端网点主键 映射（预约提交时用，与 schema.sql branches 种子一一对应） */
+const BRANCH_ID_MAP: Record<string, number> = { b1: 1, b2: 2, b3: 3, b4: 4, b5: 5, b6: 6 }
 
 export function toBackendBranchId(frontendId: string): number {
   return BRANCH_ID_MAP[frontendId] || 1
@@ -172,21 +162,18 @@ export const useBranchStore = defineStore('branch', () => {
   ])
 
   /**
-   * 从后端拉取网点真实数据，合并到本地列表
-   * 后端只有4个网点，按顺序覆盖前4个；UI专用字段（trend/icon/window等）保留 mock
+   * 从后端拉取网点真实数据，按 id（b1~b6）合并到本地列表。
+   * 后端 BranchResponse 与前端 Branch interface 同构（16 字段、status 小写、hours/flow 同名），
+   * 本地列表仅作后端不可用时的离线兜底；后端缺失的个别字段保留 mock 值。
    */
   async function fetchBranches() {
     try {
-      const list = await request.get('/api/branches')
+      const list = await request.get<Branch[]>('/api/branches')
       if (!Array.isArray(list)) return
-      list.slice(0, branches.value.length).forEach((raw: Record<string, any>, idx: number) => {
-        const local = branches.value[idx]
-        if (!local) return
-        if (raw.name) local.name = raw.name
-        if (raw.address) local.address = raw.address
-        if (raw.businessHours) local.hours = raw.businessHours.replace('-', ' - ')
-        if (raw.busyLevel) local.status = mapBusyLevel(raw.busyLevel)
-        if (raw.currentQueue !== undefined) local.flow = raw.currentQueue
+      list.forEach((raw) => {
+        if (!raw || !raw.id) return
+        const local = branches.value.find(b => b.id === raw.id)
+        if (local) Object.assign(local, raw)
       })
     } catch {
       // 后端不可用时保留 mock 数据，不影响页面

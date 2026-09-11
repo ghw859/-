@@ -578,15 +578,13 @@ function onBizTypeChange() {
   renderTimeSlots()
 }
 
-// 前端网点ID → 后端网点ID 映射
-const BRANCH_ID_MAP: Record<string, number> = { b1: 1, b2: 2, b3: 3, b4: 4, b5: 1, b6: 2 }
-
 // 确认预约
 async function confirmBooking() {
   if (selectedSlotIdx.value < 0) return
   if (!bookingBranch.value) return
 
-  const branchId = BRANCH_ID_MAP[bookingBranch.value.id] || 1
+  // 前端网点ID(b1~b6) → 后端数字主键，映射统一收敛在 branch store
+  const branchId = branchStore.toBackendBranchId(bookingBranch.value.id)
   const d = new Date()
   d.setDate(d.getDate() + selectedDateOffset.value)
   const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`

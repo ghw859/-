@@ -4,6 +4,9 @@ import { useAppointmentStore } from '../stores/appointment'
 
 const appt = useAppointmentStore()
 
+// 真实数据：已办结预约数（后端 /api/appointments/my）
+const completedCount = computed(() => appt.appointments.filter(a => a.status === 'completed').length)
+
 // 4 个核心指标卡片（完全复刻原文案+图标+颜色）
 const stats = computed(() => [
   {
@@ -20,7 +23,7 @@ const stats = computed(() => [
   },
   {
     label: '本月网点预约办结',
-    value: '14',
+    value: String(completedCount.value),
     prefix: '',
     suffix: '单',
     icon: 'fa-solid fa-calendar-check',
@@ -44,7 +47,7 @@ const stats = computed(() => [
   },
   {
     label: '预约信誉分',
-    value: '100',
+    value: String(appt.creditScore),
     prefix: '',
     suffix: '/ 100',
     icon: 'fa-solid fa-shield-halved',

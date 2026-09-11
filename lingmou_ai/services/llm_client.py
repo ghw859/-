@@ -11,7 +11,11 @@ import httpx
 
 DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY", "")
 QWEN_MODEL = os.getenv("QWEN_MODEL", "qwen-turbo")
-DASHSCOPE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+# 优先读环境变量（业务空间专属域名）；未配置时回退公共域名
+DASHSCOPE_BASE_URL = os.getenv(
+    "DASHSCOPE_BASE_URL",
+    "https://dashscope.aliyuncs.com/compatible-mode/v1",
+)
 
 
 class LLMClient:
