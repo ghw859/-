@@ -7,8 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 网点简化响应DTO（simple=true 时返回：网点状态概览）
- * 只保留前端列表展示必要的字段
+ * 网点简化响应DTO（simple=true 时返回）
+ * 字段名与前端 Branch interface 子集一致
  */
 @Data
 @Builder
@@ -17,18 +17,24 @@ import lombok.NoArgsConstructor;
 @Schema(description = "网点简化信息（状态概览）")
 public class SimpleBranchResponse {
 
-    @Schema(description = "网点ID")
-    private Long id;
-
-    @Schema(description = "网点编码：BJ01/SH01/SZ01/HZ01")
-    private String branchCode;
+    @Schema(description = "网点ID（字符串 b1~b6）", example = "b1")
+    private String id;
 
     @Schema(description = "网点名称")
     private String name;
 
-    @Schema(description = "繁忙程度: IDLE/MODERATE/BUSY")
-    private String busyLevel;
+    @Schema(description = "繁忙程度: free/moderate/busy")
+    private String status;
 
-    @Schema(description = "当前排队人数")
-    private Integer currentQueue;
+    @Schema(description = "距离(米)")
+    private Integer distance;
+
+    @Schema(description = "等待时间(分钟)")
+    private Integer wait;
+
+    @Schema(description = "在店人数")
+    private Integer flow;
+
+    @Schema(description = "窗口信息如 8/10")
+    private String window;
 }
