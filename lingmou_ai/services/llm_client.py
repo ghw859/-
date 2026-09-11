@@ -11,6 +11,8 @@ import httpx
 
 DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY", "")
 QWEN_MODEL = os.getenv("QWEN_MODEL", "qwen-turbo")
+# LLM 请求超时（秒）：数字人对话场景不能长时间卡等，默认 10s，可经环境变量调整
+LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "10"))
 # 优先读环境变量（业务空间专属域名）；未配置时回退公共域名
 DASHSCOPE_BASE_URL = os.getenv(
     "DASHSCOPE_BASE_URL",
@@ -36,6 +38,7 @@ class LLMClient:
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
         max_tokens: int = 1024,
+        timeout: float = None,
     ) -> str:
         """多轮对话
 
@@ -43,6 +46,7 @@ class LLMClient:
             messages: 消息列表，格式 [{"role": "user", "content": "..."}]
             temperature: 采样温度
             max_tokens: 最大输出 token 数
+            timeout: 单次请求超时秒数，默认取 LLM_TIMEOUT（10s）
 
         Returns:
             模型回复内容
@@ -62,7 +66,7 @@ class LLMClient:
             "max_tokens": max_tokens,
         }
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=timeout or LLM_TIMEOUT) as client:
             response = await client.post(url, json=payload, headers=headers)
             response.raise_for_status()
             data = response.json()
@@ -74,6 +78,7 @@ class LLMClient:
         system_prompt: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: int = 1024,
+        timeout: float = None,
     ) -> str:
         """单轮对话（便捷方法）
 
@@ -82,6 +87,7 @@ class LLMClient:
             system_prompt: 系统提示词（可选）
             temperature: 采样温度
             max_tokens: 最大输出 token 数
+            timeout: 单次请求超时秒数，默认取 LLM_TIMEOUT（10s）
 
         Returns:
             模型回复内容
@@ -90,7 +96,7 @@ class LLMClient:
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
-        return await self.chat(messages, temperature, max_tokens)
+        return await self.chat(messages, temperature, max_tokens, timeout)
 
 
 # 全局单例，供各 router 复用

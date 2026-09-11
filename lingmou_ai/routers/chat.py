@@ -20,16 +20,17 @@ class ChatRequest(BaseModel):
 
 @router.post("/chat")
 async def chat_endpoint(req: ChatRequest):
-    """规则版 AI 数字人对话"""
-    # 1. 读取历史上下文
+    """规则版 AI 数字人对话
+
+    Redis 降级策略（与 heatmap/diagnosis/WS 保持一致）：
+    - 读历史失败：history 置空继续（多轮退单轮，不报错）
+    - 写回失败：回复照常返回（不丢弃已生成的 reply）
+    """
+    # 1. 读取历史上下文（Redis 不可用 → 空历史降级）
     try:
         history = await redis_client.get_chat_history(req.sessionId)
-    except Exception as e:
-        return {
-            "code": settings.err_redis,
-            "msg": f"Redis 不可用：{e}",
-            "data": None,
-        }
+    except Exception:
+        history = []
 
     # 2. 规则匹配 + 话术生成
     try:
@@ -41,16 +42,12 @@ async def chat_endpoint(req: ChatRequest):
             "data": None,
         }
 
-    # 3. 写回上下文
+    # 3. 写回上下文（Redis 不可用 → 静默忽略，回复不丢）
     try:
         await redis_client.append_chat_history(req.sessionId, "user", req.message)
         await redis_client.append_chat_history(req.sessionId, "assistant", reply)
-    except Exception as e:
-        return {
-            "code": settings.err_redis,
-            "msg": f"上下文保存失败：{e}",
-            "data": None,
-        }
+    except Exception:
+        pass
 
     return {
         "code": 0,

@@ -184,7 +184,14 @@ async def chat_with_emotion(
     message: str,
     history: List[Dict[str, str]],
 ) -> Dict[str, Any]:
-    """Day 7 升级版：情感识别 + 回复生成（LLM / 知识库规则双路径）
+    """Day 7 升级版 / Day 8 健壮性修订：情感识别 + 回复生成。
+
+    策略（Day 8 修订：规则优先，unknown 才问 LLM）：
+    1. 先走 17 条知识库规则；命中（intent != unknown）→ 直接返回确定性长文，
+       零 LLM 调用，model="rule_kb"（避免 LLM 把演示话术带偏）
+    2. 仅知识库未覆盖（unknown）才尝试 LLM；失败/未配置 → 默认兜底，
+       model="rule_fallback"（LLM 超时默认 10s，不长时间卡演示）
+    情感识别与安抚语气在所有路径生效。
 
     Returns:
         {"reply", "intent", "emotion", "model"}
@@ -192,7 +199,12 @@ async def chat_with_emotion(
     emotion = detect_emotion(message)
     base_reply, intent = get_kb_reply(message)
 
-    if llm_client.is_configured:
+    if intent != "unknown":
+        # 规则优先：知识库命中，确定性话术，不调 LLM
+        reply_text = _apply_emotion_tone(base_reply, emotion)
+        model_name = "rule_kb"
+    elif llm_client.is_configured:
+        # 仅 unknown 才问大模型
         try:
             reply_text = await llm_client.chat_once(
                 prompt=message,
@@ -202,11 +214,11 @@ async def chat_with_emotion(
             )
             model_name = llm_client.model
         except Exception:
-            # LLM 失败（如 key 401）→ 降级知识库长文
+            # LLM 失败（如 key 401 / 超时）→ 默认兜底
             reply_text = _apply_emotion_tone(base_reply, emotion)
             model_name = "rule_fallback"
     else:
-        # 无 Key → 知识库长文（与 HTTP 版同文案，保证演示质量）
+        # 无 Key → 默认兜底
         reply_text = _apply_emotion_tone(base_reply, emotion)
         model_name = "rule_fallback"
 
