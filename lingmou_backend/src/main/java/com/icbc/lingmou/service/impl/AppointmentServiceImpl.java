@@ -259,6 +259,17 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new BusinessException(ResultCode.FORBIDDEN);
         }
 
+        // 终态守卫：已取消/已过期的预约不能被推进。
+        // 缺这段时前端「模拟激活」按钮能把一条已取消的预约原地复活成 ACTIVE，
+        // 状态机从此和信用分扣减记录（取消 -5）对不上。
+        String status = appointment.getStatus();
+        if ("CANCELED".equals(status)) {
+            throw new BusinessException(ResultCode.APPOINTMENT_CANCELLED, "预约已取消，无法推进进度");
+        }
+        if ("EXPIRED".equals(status)) {
+            throw new BusinessException(ResultCode.APPOINTMENT_EXPIRED, "预约已过期，无法推进进度");
+        }
+
         Integer currentStep = appointment.getProgressStep();
         if (currentStep >= 4) {
             throw new BusinessException(ResultCode.APPOINTMENT_COMPLETED);

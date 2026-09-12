@@ -17,6 +17,23 @@ const reviewRating = ref(0)
 const hoverRating = ref(0)
 const reviewSubmitted = ref(false)
 
+// 凭证详情弹窗
+const voucherModalOpen = ref(false)
+const voucherRefreshing = ref(false)
+// 刷新按钮的 loading 态
+const refreshing = ref(false)
+
+// 轻提示（沿用 NavigationView 的既有写法，不另造一套通知样式）
+const toastMsg = ref('')
+const toastVisible = ref(false)
+let toastTimer: ReturnType<typeof setTimeout> | null = null
+function showToast(msg: string) {
+  toastMsg.value = msg
+  toastVisible.value = true
+  if (toastTimer) clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { toastVisible.value = false }, 2500)
+}
+
 // 5 步定义：1=取号 2=排队 3=叫号 4=办理中 5=完成
 const steps = [
   { name: '取号', icon: 'fa-solid fa-ticket' },
@@ -47,6 +64,7 @@ const statusText = computed(() => {
   if (!currentAppt.value) return ''
   const s = currentStep.value
   if (currentAppt.value.status === 'expired') return '已失效'
+  if (currentAppt.value.status === 'canceled') return '已取消'
   if (currentAppt.value.status === 'virtual') return '虚拟号未激活'
   if (s === 1) return '已取号'
   if (s === 2) return '排队中'
@@ -59,6 +77,7 @@ const statusText = computed(() => {
 const statusSubText = computed(() => {
   if (!currentAppt.value) return ''
   if (currentAppt.value.status === 'expired') return '号码自动失效，信誉分已扣除'
+  if (currentAppt.value.status === 'canceled') return '预约已取消，如需办理请重新取号'
   if (currentAppt.value.status === 'virtual') return '请到店扫码激活后享有优先叫号'
   const s = currentStep.value
   if (s === 2) return `前方还有 ${currentAppt.value.aheadCount ?? 0} 人`
@@ -125,31 +144,82 @@ function toggleApptSelect(voucherNum: string) {
   }
 }
 
-// 批量删除选中的预约
-function deleteSelectedAppts() {
-  if (selectedApptSet.value.size === 0) {
-    alert('请先选择要删除的预约')
-    return
-  }
-  if (!confirm(`确定删除选中的 ${selectedApptSet.value.size} 条预约吗？此操作不可撤销。`)) return
-  selectedApptSet.value.forEach(v => appt.cancel(v))
-  selectedApptSet.value = new Set()
-  // 如果当前查看的预约被删除，重置选中
+/**
+ * 校正选中项：当前选中的预约已不在列表里时，回落到第一条。
+ * fetchMy() 是整体替换列表，若不校正，currentAppt 会变成 null，
+ * 模板上的 v-if="currentAppt" 会让整个进度面板消失，看起来像页面坏了。
+ */
+function syncSelectedVoucher() {
   if (selectedVoucher.value && !appt.appointments.find(a => a.voucherNum === selectedVoucher.value)) {
     selectedVoucher.value = appt.appointments[0]?.voucherNum || ''
   }
 }
 
+// 批量删除选中的预约
+async function deleteSelectedAppts() {
+  if (selectedApptSet.value.size === 0) {
+    alert('请先选择要删除的预约')
+    return
+  }
+  if (!confirm(`确定删除选中的 ${selectedApptSet.value.size} 条预约吗？此操作不可撤销。`)) return
+  const targets = [...selectedApptSet.value]
+  // allSettled 而非 all：一条失败不该中断其余，且失败数要如实报出来
+  const results = await Promise.allSettled(targets.map(v => appt.cancel(v)))
+  const failed = results.filter(r => r.status === 'rejected').length
+  showToast(failed ? `删除失败 ${failed} 条` : `已删除 ${targets.length} 条`)
+  selectedApptSet.value = new Set()
+  syncSelectedVoucher()
+}
+
+// 刷新列表
+async function refreshAll() {
+  refreshing.value = true
+  try {
+    await appt.fetchMy()
+  } catch (e: any) {
+    showToast(e?.message || '刷新失败')
+  } finally {
+    refreshing.value = false
+  }
+  syncSelectedVoucher()
+}
+
 // 模拟激活（虚拟号 -> 预约号）
-function activateFromProgress() {
+async function activateFromProgress() {
   if (!currentAppt.value) return
-  appt.updateStatus(currentAppt.value.voucherNum, 'active')
+  try {
+    await appt.updateStatus(currentAppt.value.voucherNum, 'active')
+  } catch (e: any) {
+    showToast(e?.message || '激活失败')
+  }
 }
 
 // 推进一步
-function stepForward() {
+async function stepForward() {
   if (!currentAppt.value) return
-  appt.stepForward(currentAppt.value.voucherNum)
+  try {
+    await appt.stepForward(currentAppt.value.voucherNum)
+  } catch (e: any) {
+    showToast(e?.message || '推进失败')
+  }
+}
+
+// 打开凭证详情
+function openVoucherModal() {
+  voucherModalOpen.value = true
+}
+
+// 弹窗内刷新单条（走 GET /api/appointments/{id}）
+async function refreshVoucher() {
+  if (!currentAppt.value?.id) return
+  voucherRefreshing.value = true
+  try {
+    await appt.refreshOne(currentAppt.value.id)
+  } catch (e: any) {
+    showToast(e?.message || '刷新凭证失败')
+  } finally {
+    voucherRefreshing.value = false
+  }
 }
 
 // 切换提醒开关
@@ -175,6 +245,7 @@ function getStatusBadge(status: string) {
   if (status === 'virtual') return { text: '虚拟号', cls: 'bg-slate-200 text-slate-600' }
   if (status === 'active') return { text: '激活号', cls: 'bg-rose-100 text-rose-700' }
   if (status === 'completed') return { text: '已完成', cls: 'bg-emerald-100 text-emerald-700' }
+  if (status === 'canceled') return { text: '已取消', cls: 'bg-slate-100 text-slate-400' }
   return { text: '已失效', cls: 'bg-gray-100 text-gray-400' }
 }
 
@@ -206,9 +277,10 @@ onMounted(() => {
           <p class="text-xs text-slate-500 font-medium">多预约管理 · 全程状态可视 · 叫号不等待</p>
         </div>
       </div>
-      <button
-        class="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-lg border border-slate-200 transition-all cursor-pointer">
-        <i class="fa-solid fa-rotate text-sm"></i><span>刷新</span>
+      <button @click="refreshAll" :disabled="refreshing"
+        class="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-lg border border-slate-200 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+        <i class="fa-solid fa-rotate text-sm" :class="refreshing ? 'animate-spin' : ''"></i>
+        <span>{{ refreshing ? '刷新中' : '刷新' }}</span>
       </button>
     </div>
 
@@ -281,6 +353,10 @@ onMounted(() => {
             <div class="text-xs font-bold text-white/80 mt-1">
               {{ currentAppt.window && currentStep >= 3 ? currentAppt.window : '待分配窗口' }}
             </div>
+            <button @click="openVoucherModal"
+              class="mt-2 bg-white/20 hover:bg-white/30 border border-white/40 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer">
+              <i class="fa-solid fa-receipt mr-1"></i>凭证详情
+            </button>
           </div>
         </div>
       </div>
@@ -460,5 +536,92 @@ onMounted(() => {
         </div>
       </div>
     </template>
+
+    <!-- ================= 凭证详情弹窗 ================= -->
+    <!-- 放在 v-if="currentAppt" 之外：刷新时 currentAppt 可能短暂为 null，
+         放在里面会被连带销毁，弹窗会自己闪掉 -->
+    <Teleport to="body">
+      <div v-if="voucherModalOpen && currentAppt"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+        @click.self="voucherModalOpen = false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+          <!-- 头部 -->
+          <div class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-5 py-4 text-white">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-receipt text-lg"></i>
+                <span class="text-sm font-black">预约凭证详情</span>
+              </div>
+              <button @click="voucherModalOpen = false"
+                class="text-white/80 hover:text-white transition-all cursor-pointer">
+                <i class="fa-solid fa-xmark text-lg"></i>
+              </button>
+            </div>
+            <div class="mt-3 text-center">
+              <div class="text-[10px] font-bold text-white/70 uppercase tracking-wider">凭证号</div>
+              <div class="text-xl font-black tracking-wider break-all">{{ currentAppt.voucherNum || '—' }}</div>
+            </div>
+          </div>
+
+          <!-- 明细 -->
+          <div class="p-5 space-y-2">
+            <div class="flex justify-between bg-slate-50/60 px-3 py-2 rounded-lg">
+              <span class="text-xs font-bold text-slate-500">排队号</span>
+              <span class="text-xs font-black text-slate-800">{{ currentAppt.queueNumber || '—' }}</span>
+            </div>
+            <div class="flex justify-between bg-slate-50/60 px-3 py-2 rounded-lg">
+              <span class="text-xs font-bold text-slate-500">办理网点</span>
+              <span class="text-xs font-black text-slate-800">{{ currentAppt.branchName || '—' }}</span>
+            </div>
+            <div class="flex justify-between bg-slate-50/60 px-3 py-2 rounded-lg">
+              <span class="text-xs font-bold text-slate-500">业务类型</span>
+              <span class="text-xs font-black text-slate-800">{{ currentAppt.businessType || '—' }}</span>
+            </div>
+            <div class="flex justify-between bg-slate-50/60 px-3 py-2 rounded-lg">
+              <span class="text-xs font-bold text-slate-500">预约日期</span>
+              <span class="text-xs font-black text-slate-800">{{ currentAppt.date || '—' }}</span>
+            </div>
+            <div class="flex justify-between bg-slate-50/60 px-3 py-2 rounded-lg">
+              <span class="text-xs font-bold text-slate-500">预约时段</span>
+              <span class="text-xs font-black text-slate-800">{{ currentAppt.timeSlot || '—' }}</span>
+            </div>
+            <div class="flex justify-between items-center bg-slate-50/60 px-3 py-2 rounded-lg">
+              <span class="text-xs font-bold text-slate-500">当前状态</span>
+              <span :class="['px-2 py-0.5 rounded text-[10px] font-bold', getStatusBadge(currentAppt.status).cls]">
+                {{ getStatusBadge(currentAppt.status).text }}
+              </span>
+            </div>
+            <div class="flex justify-between bg-slate-50/60 px-3 py-2 rounded-lg">
+              <span class="text-xs font-bold text-slate-500">取号时间</span>
+              <span class="text-xs font-black text-slate-800">{{ currentAppt.createdAt || '—' }}</span>
+            </div>
+            <div class="flex justify-between bg-slate-50/60 px-3 py-2 rounded-lg">
+              <span class="text-xs font-bold text-slate-500">预约ID</span>
+              <span class="text-xs font-black text-slate-800">{{ currentAppt.id ?? '—' }}</span>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+              <button @click="refreshVoucher" :disabled="voucherRefreshing"
+                class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fa-solid fa-rotate mr-1" :class="voucherRefreshing ? 'animate-spin' : ''"></i>
+                {{ voucherRefreshing ? '刷新中' : '刷新' }}
+              </button>
+              <button @click="voucherModalOpen = false"
+                class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer">
+                关闭
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- 轻提示 -->
+    <Teleport to="body">
+      <div v-if="toastVisible"
+        class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[10000] bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg">
+        {{ toastMsg }}
+      </div>
+    </Teleport>
   </div>
 </template>

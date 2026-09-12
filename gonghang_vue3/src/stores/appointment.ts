@@ -2,12 +2,14 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import request from '@/utils/request'
 
-export type ApptStatus = 'virtual' | 'active' | 'expired' | 'completed'
+export type ApptStatus = 'virtual' | 'active' | 'expired' | 'completed' | 'canceled'
 
 export interface Appointment {
   /** 后端预约ID（调API用） */
   id?: number
   voucherNum: string
+  /** 排队号（后端按 网点+预约日期 生成） */
+  queueNumber?: string
   branchName: string
   date: string
   timeSlot: string
@@ -32,6 +34,7 @@ function mapStatus(backendStatus: string): ApptStatus {
     case 'ACTIVE':
     case 'CALLED':
     case 'PROCESSING': return 'active'
+    case 'CANCELED': return 'canceled'
     case 'VIRTUAL':
     default: return 'virtual'
   }
@@ -42,6 +45,7 @@ function mapAppointment(raw: Record<string, any>): Appointment {
   return {
     id: raw.id,
     voucherNum: raw.voucherNum || '',
+    queueNumber: raw.queueNumber || '',
     branchName: raw.branchName || '',
     date: raw.appointmentDate || '',
     timeSlot: raw.timeSlot || '',
@@ -104,13 +108,24 @@ export const useAppointmentStore = defineStore('appointment', () => {
   async function cancel(voucherNum: string) {
     const appt = appointments.value.find(a => a.voucherNum === voucherNum)
     if (!appt) return
-    if (appt.id) {
-      await request.delete(`/api/appointments/${appt.id}`)
+    // 缺后端ID时直接失败，不能静默 splice：那会让记录从界面消失、后端却还在，
+    // 批量删除的「已删除 N 条」也就成了假话
+    if (!appt.id) {
+      throw new Error('该预约缺少后端ID，无法取消')
     }
+    await request.delete(`/api/appointments/${appt.id}`)
     const idx = appointments.value.findIndex(a => a.voucherNum === voucherNum)
     if (idx > -1) appointments.value.splice(idx, 1)
     // 后端会自动扣5分，同步一下信用分
     await fetchCredit()
+  }
+
+  /** 刷新单条预约（读后端的单条详情，用于凭证详情弹窗） */
+  async function refreshOne(apptId?: number) {
+    if (!apptId) return
+    const raw = await request.get(`/api/appointments/${apptId}`)
+    const appt = appointments.value.find(a => a.id === apptId)
+    if (appt) Object.assign(appt, mapAppointment(raw))
   }
 
   /**
@@ -164,6 +179,6 @@ export const useAppointmentStore = defineStore('appointment', () => {
   return {
     appointments, creditScore, activeAppointments, loaded,
     fetchMy, fetchCredit,
-    book, updateStatus, stepForward, setRating, cancel, deductScore, addScore,
+    book, updateStatus, stepForward, setRating, cancel, refreshOne, deductScore, addScore,
   }
 })

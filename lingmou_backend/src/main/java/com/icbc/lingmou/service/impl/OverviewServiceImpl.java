@@ -36,8 +36,8 @@ public class OverviewServiceImpl implements OverviewService {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("MM-dd");
 
-    /** 信用分口径：与 CreditServiceImpl 保持一致 */
-    private static final int DEFAULT_SCORE = 100;
+    /** 信用分口径：与 CreditServiceImpl / UserServiceImpl 保持一致（新用户初始 90，上限 100） */
+    private static final int DEFAULT_SCORE = 90;
     private static final int MIN_SCORE = 0;
     private static final int MAX_SCORE = 100;
     private static final int HIGH_SCORE_THRESHOLD = 90;

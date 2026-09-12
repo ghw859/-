@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAppointmentStore } from '../stores/appointment'
 import { useAuditLogStore } from '../stores/auditLog'
+import request from '@/utils/request'
 
 const router = useRouter()
-const appt = useAppointmentStore()
 const auditLog = useAuditLogStore()
+
+// 业务类型 → 中文名（原先局部定义在 proceedGenerateQR 内，列表渲染也要用，提到顶层）
+const bizTypeNameMap: Record<string, string> = {
+  cash_reserve: '大额取现预约',
+  open_card: '办卡开户',
+  corp_transfer: '对公跨行转账汇款',
+  cash_deposit: '对公现金缴款',
+  fx_exchange: '外币兑换',
+}
 
 // AI 折叠面板状态
 const aiPanelOpen = ref(false)
@@ -337,7 +345,52 @@ function closeMatModal() {
   matModalOpen.value = false
 }
 
-function proceedGenerateQR() {
+// 我的预填单（后端 /api/preforms/my）
+const preFormList = ref<any[]>([])
+
+async function loadMyPreForms() {
+  preFormList.value = (await request.get('/api/preforms/my')) as any[]
+}
+
+/** 材料图片标记：目前没有真实上传，只把「传了哪几项」记下来 */
+function buildImageUrls(): string | undefined {
+  const urls: string[] = []
+  if (manualInfo.value.frontUploaded) urls.push('idcard_front')
+  if (manualInfo.value.backUploaded) urls.push('idcard_back')
+  return urls.length > 0 ? JSON.stringify(urls) : undefined
+}
+
+/** 组装 PreFormRequest */
+function buildPreFormPayload(bizType: string, extraDataMap: Record<string, object>) {
+  // 签名/公章存的是 canvas.toDataURL() 全量字符串（动辄几万字符），
+  // 而 pre_forms.signature_url 只有 VARCHAR(255)，发过去会触发
+  // MySQL Data too long，被全局异常处理兜成 90000 系统繁忙 —— 看不出任何原因。
+  // 因此只记录「签了哪几项」，不传图片本体。
+  const signatureKeys = Object.entries(signatureState.value)
+    .filter(([, v]) => !!v)
+    .map(([k]) => k)
+
+  return {
+    businessType: bizType,
+    // 从模板下拉直接提交时 srcText 是空的，而 rawText 后端是 @NotBlank，
+    // 没有这句兜底会直接吃一个 10001 参数错误
+    rawText: srcText.value.trim() || `[手动录入] ${bizTypeNameMap[bizType] || '其他业务'}`,
+    parsedJson: JSON.stringify({
+      bizType,
+      baseInfo: { ...baseInfo.value },
+      fields: extraDataMap[bizType] || {},
+      manual: {
+        notes: manualInfo.value.notes,
+        frontUploaded: manualInfo.value.frontUploaded,
+        backUploaded: manualInfo.value.backUploaded,
+      },
+      signatureKeys,
+    }),
+    imageUrls: buildImageUrls(),
+  }
+}
+
+async function proceedGenerateQR() {
   closeMatModal()
   // 生成防伪业务流水号
   const randomId = Math.floor(1000 + Math.random() * 9000)
@@ -345,14 +398,6 @@ function proceedGenerateQR() {
   qrSn.value = `ICBC-${timestamp}-${randomId}`
   showQRCode.value = true
 
-  // 保存预填单记录到审计日志，供历史预约查询页面展示
-  const bizTypeNameMap: Record<string, string> = {
-    cash_reserve: '大额取现预约',
-    open_card: '办卡开户',
-    corp_transfer: '对公跨行转账汇款',
-    cash_deposit: '对公现金缴款',
-    fx_exchange: '外币兑换',
-  }
   const bizType = currentBizType.value || 'cash_reserve'
   const extraDataMap: Record<string, object> = {
     cash_reserve: { ...cashReserveFields.value },
@@ -361,6 +406,20 @@ function proceedGenerateQR() {
     cash_deposit: { ...cashDepositFields.value },
     fx_exchange: { ...fxExchangeFields.value },
   }
+
+  // 预填单落库。失败就停在这里保留现场，不能跳走假装成功
+  try {
+    const created = (await request.post('/api/preforms',
+      buildPreFormPayload(bizType, extraDataMap))) as any
+    preFormList.value.unshift(created)
+  } catch (e: any) {
+    statusText.value = '预填单保存失败：' + (e?.message || '未知错误')
+    statusIcon.value = 'fa-solid fa-triangle-exclamation'
+    statusColor.value = 'text-rose-500'
+    return
+  }
+
+  // 保存预填单记录到审计日志，供历史预约查询页面展示
   auditLog.add({
     bizType: bizType as 'cash_reserve' | 'open_card' | 'corp_transfer' | 'cash_deposit' | 'fx_exchange',
     bizTypeName: bizTypeNameMap[bizType] || '其他业务',
@@ -375,6 +434,11 @@ function proceedGenerateQR() {
   // 跳转到业务直通码页面
   router.push('/qrcode')
 }
+
+onMounted(() => {
+  // 失败静默：拦截器已经 alert 过了，这里只避免未处理的 rejection
+  loadMyPreForms().catch(() => {})
+})
 
 // 快速测试模版
 function applyTestTemplate(idx: number) {
@@ -1109,6 +1173,44 @@ function switchBusinessFormLayout(type: BizType) {
               <i class="fa-solid fa-qrcode"></i>
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 我的预填单 ================= -->
+    <div class="bg-white/50 backdrop-blur-2xl p-4 rounded-2xl border border-slate-200/60">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-file-lines text-indigo-500"></i>
+          <h3 class="text-sm font-black text-slate-800">我的预填单</h3>
+          <span class="text-[10px] font-bold text-slate-400">共 {{ preFormList.length }} 条</span>
+        </div>
+        <button @click="loadMyPreForms()"
+          class="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-lg border border-slate-200 transition-all cursor-pointer">
+          <i class="fa-solid fa-rotate text-sm"></i><span>刷新</span>
+        </button>
+      </div>
+
+      <div v-if="preFormList.length === 0" class="text-center py-6">
+        <i class="fa-solid fa-inbox text-2xl text-slate-300 mb-2"></i>
+        <p class="text-xs font-bold text-slate-400">暂无预填单记录</p>
+      </div>
+
+      <div v-else class="space-y-2">
+        <div v-for="p in preFormList" :key="p.id"
+          class="flex items-center justify-between bg-white/70 px-3 py-2 rounded-xl border border-slate-200/60">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black text-slate-800">
+                {{ bizTypeNameMap[p.businessType] || p.businessType }}
+              </span>
+              <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-500">
+                {{ p.status === 'DRAFT' ? '草稿' : p.status }}
+              </span>
+            </div>
+            <div class="text-[10px] text-slate-400 truncate mt-0.5">{{ p.rawText }}</div>
+          </div>
+          <div class="text-[10px] font-bold text-slate-400 shrink-0 ml-3">{{ p.createdAt }}</div>
         </div>
       </div>
     </div>
