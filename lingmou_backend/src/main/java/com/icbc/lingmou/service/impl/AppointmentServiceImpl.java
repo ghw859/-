@@ -44,6 +44,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private static final int MAX_PER_SLOT = 10; // 每时段最多10人
     private static final int CREDIT_LIMIT = 60; // 信用分低于60限制预约
+    private static final int DEFAULT_CREDIT_SCORE = 90; // 空值兜底初始分（与注册逻辑一致）
 
     /**
      * 预约创建的分段锁（striped lock）
@@ -77,7 +78,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         if (user == null) {
             throw new BusinessException(ResultCode.USER_NOT_EXIST);
         }
-        Integer creditScore = user.getCreditScore() != null ? user.getCreditScore() : 100;
+        Integer creditScore = user.getCreditScore() != null ? user.getCreditScore() : DEFAULT_CREDIT_SCORE;
         if (creditScore < CREDIT_LIMIT) {
             throw new BusinessException(ResultCode.CREDIT_TOO_LOW);
         }
@@ -94,15 +95,15 @@ public class AppointmentServiceImpl implements AppointmentService {
         synchronized (bookingLock(request.getBranchId(), request.getAppointmentDate())) {
             // 2. 检查同一用户同日同时段是否已有预约（跨网点）
             if (hasConflictAppointment(userId,
-                request.getAppointmentDate().toString(),
-                request.getTimeSlot())) {
+                    request.getAppointmentDate().toString(),
+                    request.getTimeSlot())) {
                 throw new BusinessException(ResultCode.APPOINTMENT_CONFLICT);
             }
 
             // 3. 检查时段是否已满
             if (isSlotFull(request.getBranchId(),
-                request.getAppointmentDate().toString(),
-                request.getTimeSlot())) {
+                    request.getAppointmentDate().toString(),
+                    request.getTimeSlot())) {
                 throw new BusinessException(ResultCode.SLOT_FULL);
             }
 
@@ -132,18 +133,17 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     public List<AppointmentResponse> getUserAppointments(Long userId) {
         List<Appointment> appointments = appointmentMapper.selectList(
-            new LambdaQueryWrapper<Appointment>()
-                .eq(Appointment::getUserId, userId)
-                .orderByDesc(Appointment::getCreatedAt)
-        );
+                new LambdaQueryWrapper<Appointment>()
+                        .eq(Appointment::getUserId, userId)
+                        .orderByDesc(Appointment::getCreatedAt));
 
         return appointments.stream()
-            .map(apt -> {
-                Branch branch = branchMapper.selectById(apt.getBranchId());
-                String branchName = branch != null ? branch.getName() : "";
-                return toResponse(apt, branchName);
-            })
-            .collect(Collectors.toList());
+                .map(apt -> {
+                    Branch branch = branchMapper.selectById(apt.getBranchId());
+                    String branchName = branch != null ? branch.getName() : "";
+                    return toResponse(apt, branchName);
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -206,10 +206,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         // 必须按"预约日期"计数，而不是按"今天"计数：
         // 之前用 LocalDate.now() 统计，导致预约 8 天后的号仍然从 1001 起，不同预约重号
         Long count = appointmentMapper.selectCount(
-            new LambdaQueryWrapper<Appointment>()
-                .eq(Appointment::getBranchId, branchId)
-                .eq(Appointment::getAppointmentDate, appointmentDate)
-        );
+                new LambdaQueryWrapper<Appointment>()
+                        .eq(Appointment::getBranchId, branchId)
+                        .eq(Appointment::getAppointmentDate, appointmentDate));
 
         return prefix + String.format("%03d", count + 1);
     }
@@ -217,24 +216,22 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     public boolean isSlotFull(Long branchId, String date, String timeSlot) {
         Long count = appointmentMapper.selectCount(
-            new LambdaQueryWrapper<Appointment>()
-                .eq(Appointment::getBranchId, branchId)
-                .eq(Appointment::getAppointmentDate, LocalDate.parse(date))
-                .eq(Appointment::getTimeSlot, timeSlot)
-                .notIn(Appointment::getStatus, "CANCELED", "EXPIRED")
-        );
+                new LambdaQueryWrapper<Appointment>()
+                        .eq(Appointment::getBranchId, branchId)
+                        .eq(Appointment::getAppointmentDate, LocalDate.parse(date))
+                        .eq(Appointment::getTimeSlot, timeSlot)
+                        .notIn(Appointment::getStatus, "CANCELED", "EXPIRED"));
         return count >= MAX_PER_SLOT;
     }
 
     @Override
     public boolean hasConflictAppointment(Long userId, String date, String timeSlot) {
         Long count = appointmentMapper.selectCount(
-            new LambdaQueryWrapper<Appointment>()
-                .eq(Appointment::getUserId, userId)
-                .eq(Appointment::getAppointmentDate, LocalDate.parse(date))
-                .eq(Appointment::getTimeSlot, timeSlot)
-                .notIn(Appointment::getStatus, "CANCELED", "EXPIRED")
-        );
+                new LambdaQueryWrapper<Appointment>()
+                        .eq(Appointment::getUserId, userId)
+                        .eq(Appointment::getAppointmentDate, LocalDate.parse(date))
+                        .eq(Appointment::getTimeSlot, timeSlot)
+                        .notIn(Appointment::getStatus, "CANCELED", "EXPIRED"));
         return count > 0;
     }
 
@@ -296,7 +293,7 @@ public class AppointmentServiceImpl implements AppointmentService {
      */
     private String generateVoucherNum() {
         return "V" + System.currentTimeMillis()
-            + String.format("%04d", ThreadLocalRandom.current().nextInt(10000));
+                + String.format("%04d", ThreadLocalRandom.current().nextInt(10000));
     }
 
     @Override
@@ -342,18 +339,18 @@ public class AppointmentServiceImpl implements AppointmentService {
      */
     private AppointmentResponse toResponse(Appointment appointment, String branchName) {
         return AppointmentResponse.builder()
-            .id(appointment.getId())
-            .userId(appointment.getUserId())
-            .branchId(appointment.getBranchId())
-            .branchName(branchName)
-            .businessType(appointment.getBusinessType())
-            .appointmentDate(appointment.getAppointmentDate())
-            .timeSlot(appointment.getTimeSlot())
-            .queueNumber(appointment.getQueueNumber())
-            .status(appointment.getStatus())
-            .voucherNum(appointment.getVoucherNum())
-            .progressStep(appointment.getProgressStep())
-            .createdAt(appointment.getCreatedAt())
-            .build();
+                .id(appointment.getId())
+                .userId(appointment.getUserId())
+                .branchId(appointment.getBranchId())
+                .branchName(branchName)
+                .businessType(appointment.getBusinessType())
+                .appointmentDate(appointment.getAppointmentDate())
+                .timeSlot(appointment.getTimeSlot())
+                .queueNumber(appointment.getQueueNumber())
+                .status(appointment.getStatus())
+                .voucherNum(appointment.getVoucherNum())
+                .progressStep(appointment.getProgressStep())
+                .createdAt(appointment.getCreatedAt())
+                .build();
     }
 }

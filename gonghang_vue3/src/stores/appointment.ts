@@ -56,7 +56,7 @@ function mapAppointment(raw: Record<string, any>): Appointment {
 
 export const useAppointmentStore = defineStore('appointment', () => {
   const appointments = ref<Appointment[]>([])
-  const creditScore = ref<number>(100)
+  const creditScore = ref<number>(90)
   const loaded = ref(false)
 
   const activeAppointments = computed(() =>
@@ -73,7 +73,7 @@ export const useAppointmentStore = defineStore('appointment', () => {
   /** 从后端加载信用分 */
   async function fetchCredit() {
     const data = await request.get('/api/credit')
-    creditScore.value = data.creditScore ?? 100
+    creditScore.value = data.creditScore ?? 90
   }
 
   /**

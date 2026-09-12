@@ -13,10 +13,20 @@ export interface UserInfo {
   elderlyMode: number
 }
 
+// userInfo 需要跨刷新持久化：AI 诊断等接口要带 userId，仅存 username 无法在刷新后恢复
+function loadStoredUserInfo(): UserInfo | null {
+  try {
+    const raw = localStorage.getItem('lingmou_user_info')
+    return raw ? (JSON.parse(raw) as UserInfo) : null
+  } catch {
+    return null
+  }
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const username = ref(localStorage.getItem('lingmou_username') || '')
   const isLoggedIn = ref(localStorage.getItem('lingmou_logged_in') === 'true')
-  const userInfo = ref<UserInfo | null>(null)
+  const userInfo = ref<UserInfo | null>(loadStoredUserInfo())
 
   async function login(user: string, pwd: string) {
     if (!user || !pwd) throw new Error('请输入账号和密码')
@@ -24,6 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('lingmou_token', data.token)
     localStorage.setItem('lingmou_logged_in', 'true')
     localStorage.setItem('lingmou_username', data.userInfo.username)
+    localStorage.setItem('lingmou_user_info', JSON.stringify(data.userInfo))
     isLoggedIn.value = true
     username.value = data.userInfo.username
     userInfo.value = data.userInfo
@@ -41,6 +52,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('lingmou_token', data.token)
     localStorage.setItem('lingmou_logged_in', 'true')
     localStorage.setItem('lingmou_username', data.userInfo.username)
+    localStorage.setItem('lingmou_user_info', JSON.stringify(data.userInfo))
     isLoggedIn.value = true
     username.value = data.userInfo.username
     userInfo.value = data.userInfo
@@ -55,6 +67,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('lingmou_token')
     localStorage.removeItem('lingmou_logged_in')
     localStorage.removeItem('lingmou_username')
+    localStorage.removeItem('lingmou_user_info')
     isLoggedIn.value = false
     username.value = ''
     userInfo.value = null

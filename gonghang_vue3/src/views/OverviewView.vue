@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAppointmentStore } from '../stores/appointment'
+import { useAuthStore } from '../stores/auth'
 import request from '../utils/request'
 
 const appt = useAppointmentStore()
+const auth = useAuthStore()
 
 // 真实数据：已办结预约数（后端 /api/appointments/my）
 const completedCount = computed(() => appt.appointments.filter(a => a.status === 'completed').length)
@@ -180,16 +182,18 @@ function toggleLineChart(range: ChartRange) {
 
 // AI 实时诊断打字机效果（复刻 DOMContentLoaded 逻辑）
 const aiDiagnosis = ref('数据初始化中，AI 核心引擎正在解算您的全维账单资产态势...')
-const fullDiagnosisText =
+// Python AI 服务不可用时的兜底文案（与原静态版本一致，保证页面永不空白）
+const FALLBACK_DIAGNOSIS =
   '经 ICBC-AI 业务调度与风控双模型扫描，本月您通过平台自主选择网点预约办理柜面业务 14 笔，依托线上资料预填 + 网点智能分流，单笔业务平均办理时长压缩 41%；系统同时识别 2 笔夜间陌生大额转账并弹窗拦截，账户综合安全系数 98 分。闲置活期资金可配置工行低风险定期产品稳健增值。'
+const fullDiagnosisText = ref(FALLBACK_DIAGNOSIS)
 let typeTimer: ReturnType<typeof setInterval> | null = null
 
 function startTyping() {
   let idx = 0
   aiDiagnosis.value = ''
   typeTimer = setInterval(() => {
-    if (idx < fullDiagnosisText.length) {
-      aiDiagnosis.value += fullDiagnosisText.charAt(idx)
+    if (idx < fullDiagnosisText.value.length) {
+      aiDiagnosis.value += fullDiagnosisText.value.charAt(idx)
       idx++
     } else if (typeTimer) {
       clearInterval(typeTimer)
@@ -198,9 +202,29 @@ function startTyping() {
   }, 20)
 }
 
+// Day8：诊断文案改调 Python AI 服务 /api/ai/diagnosis（data.text 单段纯文本）
+// 等待期间保留"数据初始化中"占位；接口失败/未登录态丢失时静默回退本地文案
+async function loadDiagnosis() {
+  const userId = auth.userInfo?.id
+  try {
+    if (userId) {
+      const data = await request.get<{ text: string }>('/api/ai/diagnosis', {
+        params: { userId },
+      })
+      if (data && typeof data.text === 'string' && data.text.trim().length > 0) {
+        fullDiagnosisText.value = data.text
+      }
+    }
+  } catch {
+    // 保留兜底文案，不打断打字机流程
+  } finally {
+    startTyping()
+  }
+}
+
 onMounted(() => {
   loadHeatmap()
-  startTyping()
+  loadDiagnosis()
 })
 
 onUnmounted(() => {

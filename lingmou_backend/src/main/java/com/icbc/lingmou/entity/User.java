@@ -33,7 +33,7 @@ public class User {
     /** 客户级别: NORMAL/SILVER/GOLD */
     private String customerLevel;
 
-    /** 信用分，默认100 */
+    /** 信用分，新用户默认90（留出办结+3等正向激励的成长空间，上限100） */
     private Integer creditScore;
 
     /** 老年模式: 0-关闭 1-开启 */

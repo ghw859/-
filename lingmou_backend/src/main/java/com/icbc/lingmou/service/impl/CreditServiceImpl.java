@@ -34,6 +34,8 @@ public class CreditServiceImpl implements CreditService {
     private static final int FAIR_THRESHOLD = 60;
     private static final int MIN_SCORE = 0;
     private static final int MAX_SCORE = 100;
+    /** 空值兜底初始分（与 UserServiceImpl / schema.sql DEFAULT 保持一致） */
+    private static final int DEFAULT_CREDIT_SCORE = 90;
 
     @Override
     public CreditScoreResponse getCreditScore(Long userId) {
@@ -42,33 +44,32 @@ public class CreditServiceImpl implements CreditService {
             throw new BusinessException(ResultCode.USER_NOT_EXIST);
         }
 
-        Integer score = user.getCreditScore() != null ? user.getCreditScore() : 100;
+        Integer score = user.getCreditScore() != null ? user.getCreditScore() : DEFAULT_CREDIT_SCORE;
 
         // 查询近10条变更记录
         List<CreditRecord> records = creditRecordMapper.selectList(
-            new LambdaQueryWrapper<CreditRecord>()
-                .eq(CreditRecord::getUserId, userId)
-                .orderByDesc(CreditRecord::getCreatedAt)
-                .last("LIMIT 10")
-        );
+                new LambdaQueryWrapper<CreditRecord>()
+                        .eq(CreditRecord::getUserId, userId)
+                        .orderByDesc(CreditRecord::getCreatedAt)
+                        .last("LIMIT 10"));
 
         List<CreditScoreResponse.CreditChangeItem> history = records.stream()
-            .map(r -> CreditScoreResponse.CreditChangeItem.builder()
-                .changeType(r.getChangeType())
-                .amount(r.getAmount())
-                .reason(r.getReason())
-                .createdAt(r.getCreatedAt())
-                .build())
-            .collect(Collectors.toList());
+                .map(r -> CreditScoreResponse.CreditChangeItem.builder()
+                        .changeType(r.getChangeType())
+                        .amount(r.getAmount())
+                        .reason(r.getReason())
+                        .createdAt(r.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
 
         return CreditScoreResponse.builder()
-            .userId(userId)
-            .username(user.getUsername())
-            .creditScore(score)
-            .creditLevel(calcCreditLevel(score))
-            .customerLevel(user.getCustomerLevel())
-            .changeHistory(history)
-            .build();
+                .userId(userId)
+                .username(user.getUsername())
+                .creditScore(score)
+                .creditLevel(calcCreditLevel(score))
+                .customerLevel(user.getCustomerLevel())
+                .changeHistory(history)
+                .build();
     }
 
     @Override
@@ -79,7 +80,7 @@ public class CreditServiceImpl implements CreditService {
             throw new BusinessException(ResultCode.USER_NOT_EXIST);
         }
 
-        Integer currentScore = user.getCreditScore() != null ? user.getCreditScore() : 100;
+        Integer currentScore = user.getCreditScore() != null ? user.getCreditScore() : DEFAULT_CREDIT_SCORE;
         String changeType = amount >= 0 ? "ADD" : "DEDUCT";
 
         // 计算新信用分，限制在[0, 100]
@@ -99,7 +100,7 @@ public class CreditServiceImpl implements CreditService {
         userMapper.updateById(user);
 
         log.info("信用分调整: userId={}, operator={}, amount={}, reason={}, {}->{}",
-            targetUserId, operatorId, amount, reason, currentScore, newScore);
+                targetUserId, operatorId, amount, reason, currentScore, newScore);
 
         return getCreditScore(targetUserId);
     }
@@ -108,10 +109,14 @@ public class CreditServiceImpl implements CreditService {
      * 计算信用等级
      */
     private String calcCreditLevel(Integer score) {
-        if (score == null) return "FAIR";
-        if (score >= EXCELLENT_THRESHOLD) return "EXCELLENT";
-        if (score >= GOOD_THRESHOLD) return "GOOD";
-        if (score >= FAIR_THRESHOLD) return "FAIR";
+        if (score == null)
+            return "FAIR";
+        if (score >= EXCELLENT_THRESHOLD)
+            return "EXCELLENT";
+        if (score >= GOOD_THRESHOLD)
+            return "GOOD";
+        if (score >= FAIR_THRESHOLD)
+            return "FAIR";
         return "POOR";
     }
 
@@ -124,7 +129,7 @@ public class CreditServiceImpl implements CreditService {
             return;
         }
 
-        Integer currentScore = user.getCreditScore() != null ? user.getCreditScore() : 100;
+        Integer currentScore = user.getCreditScore() != null ? user.getCreditScore() : DEFAULT_CREDIT_SCORE;
         String changeType = amount >= 0 ? "ADD" : "DEDUCT";
         int newScore = Math.max(MIN_SCORE, Math.min(MAX_SCORE, currentScore + amount));
 
@@ -140,6 +145,6 @@ public class CreditServiceImpl implements CreditService {
         userMapper.updateById(user);
 
         log.info("信用分自动调整: userId={}, amount={}, reason={}, {}->{}",
-            userId, amount, reason, currentScore, newScore);
+                userId, amount, reason, currentScore, newScore);
     }
 }

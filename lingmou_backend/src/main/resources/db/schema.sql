@@ -23,7 +23,7 @@ CREATE TABLE users (
     avatar          VARCHAR(255) COMMENT '头像URL',
     role            VARCHAR(20) DEFAULT 'CUSTOMER' COMMENT '角色: CUSTOMER/AUDITOR/RISK/ADMIN',
     customer_level  VARCHAR(20) DEFAULT 'NORMAL' COMMENT '客户级别: NORMAL/SILVER/GOLD',
-    credit_score    INT DEFAULT 100 COMMENT '信用分',
+    credit_score    INT DEFAULT 90 COMMENT '信用分（初始90，正向行为可升至100）',
     elderly_mode    TINYINT DEFAULT 0 COMMENT '老年模式: 0-关闭 1-开启',
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
