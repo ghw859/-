@@ -210,3 +210,44 @@ OverviewView 的诊断卡片接线已由前端侧完成（`loadDiagnosis()`，�
 
 1. AI 服务按标准 `uvicorn main:app --port 8000` 启动（需 Redis 在 6379 运行）
 2. precheck 传 `TRANSFER` / `LOAN` 亦可（已兼容），但建议统一用 6 个标准枚举
+
+---
+
+## 八、Day 9 联调通知（2026-09-12，Java-A → 全员）
+
+Java-A 提交 `d5e7eb8`：预填单页/凭证详情/进度时间轴联调完成（真实浏览器 e2e 验证：进度页 16 断言、预填单页 18 断言、失败路径 17 断言全过）。以下事项需各角色知悉/决策。
+
+### 1.【需 Java-B 决策】预约凭证 V ↔ 直通码 T 格式断裂（本次有意未修）
+
+- `AppointmentServiceImpl.generateVoucherNum()` 产出 `V`+毫秒+4位随机（18 字符）；`VoucherServiceImpl.isValidVoucherNum()` 要求 21 字符、`T` 开头、CRC16 通过
+- 后果：拿 `appointment.voucherNum` 调 `GET /api/vouchers/{num}` 一律 `validFormat:false`；`GET /api/qrcode/{num}/image` 抛 `20007`
+- `vouchers` 表行只由 `POST /api/qrcode/generate` 创建、`appointment_id` 恒 NULL，**两套凭证无任何数据通路**。直通码页在 Java-B 范围，由 Java-B 定夺是否统一。
+
+### 2.【T3 归属确认】`POST /api/qrcode/generate` 前端仍无人调用
+
+- 现状：PreFormView「材料已备齐，生成直通码」按钮目前只做 `POST /api/preforms`（保存预填单）+ 跳 `/qrcode`；`QRCodeView.vue` 也未调 generate
+- Java-A 侧有意不接（分工红线：预填单只保存+列表）。建议 **Java-B 在 QRCodeView 内接通 generate + AI 预检弹窗**，或明确由 Java-A 在按钮上加一次预检调用，二选一即可跑通 T3 全链路
+
+### 3.【共享 store 变更】`stores/appointment.ts`（QRCodeView 是消费方）
+
+本次改动：`ApptStatus` 新增 `'canceled'`；`Appointment` 新增 `queueNumber`；新增 `refreshOne(id)`；`cancel()` 缺后端 ID 时改为 **throw**（不再静默 splice）。均为增量，但 QRCodeView 若 catch 不到会直接冒泡，请知悉。
+
+### 4.【已知限制·非 bug，待拍板】
+
+- **终态预约永远删不掉**：已取消/已过期/已完成后端拒绝删除（20006/20004），但进度页仍给复选框 → 批量删除必然部分失败，toast 如实提示「删除失败 N 条」且卡片不动（已实测）。建议二选一：终态卡片隐藏复选框，或后端放开终态软删除
+- **后端不可达时 toast 显示 axios 英文原文** `Request failed with status code 502`（拦截器 `error.response.data.msg` 取不到时回落 `error.message`），中文界面突兀，待统一文案
+- `NavigationView.vue:1075-1079` 状态徽章 `v-else` 写死「待激活」，已取消预约在此误显为「待激活」（既有问题、非本次回归），归属待确认
+
+### 5.【需前端负责人一行修】OverviewView 「AI 预填单自动解析」是假数据
+
+`OverviewView.vue:41` 值硬编码 `'9'`；后端 `GET /api/overview` 已返回真实 `totalPreForms`（当前 2），但全前端 0 处消费。一行 `value: String(...)` 即可变真。
+
+### 6.【需 Python 知悉】签名与预填单落库现状
+
+- `pre_forms.signature_url` 是 `VARCHAR(255)`，装不下 canvas dataURL（实测 400 字符即触发 MySQL 1406 → 兜成 90000）。签名目前只记在 `parsedJson.signatureKeys`（键名清单），**未持久化图像**。要真落签名需新增上传接口 + 改列 TEXT；`schema.sql` 是 DROP TABLE 重建脚本不能重跑
+- `pre_forms.raw_text` 可能出现 `[手动录入] {业务名}` 前缀（手动路径无粘贴文本时的兜底），若 AI 侧解析 rawText 需兼容该标记
+
+### 7.【联调环境】测试数据现状（演示前知悉）
+
+- 账号 `13800138000`：信用分 **70**（联调取消/删除扣分痕迹，4 条 credit_records）；`appointments` 5 条（1 虚拟号 / 3 已取消 / 1 已失效，正好演示进度页多状态）；`pre_forms` 2 条
+- 进度页演示可直接用；要恢复 90 分或清数据找 Java-A
