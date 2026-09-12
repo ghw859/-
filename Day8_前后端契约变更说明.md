@@ -149,17 +149,7 @@ Day8 联调前以 `gonghang_vue3/src/views/OverviewView.vue`、`AIAssistantView.
 
 ---
 
-## 六、环境注意：本机 8000 端口被 Windows 系统预留
-
-开发机上 `uvicorn --port 8000` 报 `[Errno 10013]`：8000 被系统 **http.sys / Hyper-V 动态端口排除**占用（`netsh interface ipv4 show excludedportrange protocol=tcp` 可见 8000-8000，监听者为 PID 4 System），普通权限无法释放（重启 WinNAT 需管理员）。
-
-- 代码与端口无关，本次功能验证在 **8010** 端口完成，行为与 8000 完全一致
-- 其他机器 / Day10 的 Docker Compose 环境内无此限制，仍按标准 `uvicorn main:app --port 8000` 启动
-- 本机临时联调可用 `--port 8010`，并把 `vite.config.ts` 的 proxy target 临时改为 8010（或用管理员权限执行 `net stop winnat && net start winnat` 后重试 8000）
-
----
-
-## 七、前端接线（已完成 ✅，模板与数据结构零改动）
+## 六、前端接线（已完成 ✅，模板与数据结构零改动）
 
 接线于 2026-09-11 完成并通过浏览器端到端验证。**未改任何模板结构/mock 数据结构**，仅新增请求动作，原本地算法/知识库全部保留为降级兜底。
 
@@ -172,7 +162,7 @@ Day8 联调前以 `gonghang_vue3/src/views/OverviewView.vue`、`AIAssistantView.
 
 **端到端验证证据（真实浏览器）**：
 
-- 真实链路（vite 5173 → proxy → Python 8010）：
+- 真实链路（vite 5173 → proxy → Python 8000）：
   - 热力图 `GET /api/ai/heatmap` 200，DOM 实测 **6 行 × 8 列 = 48 格**，行名/首行数值（93,100,75,43,48,66,70,44）与后端逐字一致，tip 正常显示
   - 数字人 `POST /api/ai/chat` 200："附近哪个网点人少"→【AI网点推荐】127 字；"我想办卡"→【开户办卡指引】117 字；sessionId 自动生成（`web_<时间戳>_<随机>`）
   - 控制台无 /api/ai/ 相关错误
@@ -181,6 +171,42 @@ Day8 联调前以 `gonghang_vue3/src/views/OverviewView.vue`、`AIAssistantView.
   - 数字人自动回退本地知识库，仍返回【AI网点推荐】长文，**无 alert、对话不中断**
 - 前端工程检查：`vue-tsc` 类型检查零错误，`vite build` 成功
 
-**剩余 Day9 接线（本次未做）**：诊断卡片取 `GET /api/ai/diagnosis` 的 `data.text` 赋给打字机源文本即可（后端已就绪）。
+---
 
-> 本机联调备注：因 8000 被系统预留，验证时 Python 跑在 8010，用临时 vite 配置 `npx vite --config vite.tmp.config.ts` 覆盖 proxy target；该临时文件已删除，仓库中的 `vite.config.ts` 仍指向标准 8000，Docker/其他机器不受影响。
+## 七、Day 9 联调通知（2026-09-12，Python 模块 → 全员）
+
+### 1. 【待办·前端】AI 材料预检接线（T3，Day9 唯一剩余开发项）
+
+**现状**：Java `POST /api/qrcode/generate` 已完整接通 Python `POST /api/ai/precheck`（QRCodeController → AiPrecheckServiceImpl，60004 有专门分支），但**前端从未调用过该接口**——目前 PreFormView 的「生成直通码」按钮只走本地流程，AI 预检链路端到端从未跑通。
+
+**接线点（前端 1 处改动 + 1 个弹窗）**：
+
+1. `gonghang_vue3/src/views/PreFormView.vue` **L1165**「材料已备齐，生成直通码」按钮：点击时改为（或先）调用 Java `POST /api/qrcode/generate`
+   - 请求体：`{ businessType, materials, ... }`（沿用现有表单字段，businessType 用 6 个标准枚举或简写均可，见下）
+   - `code=0 && passed=true` → 按现有流程跳转 `/qrcode`
+   - `passed=false` → 弹窗展示 `data.missing`（缺失材料清单），不跳转
+   - `code=60004`（未知业务）→ 提示业务类型错误
+2. Python 侧已做**枚举别名兼容**（本次新增）：`TRANSFER`→`LARGE_TRANSFER`、`LOAN`→`LOAN_APPLICATION`，大小写不敏感；前端/Java 传哪种写法都不会再误报 60004
+
+**Python/Java 两侧接口均已就绪，联调时只需前端接上即可跑通。**
+
+### 2. 【已完成·无需动作】AI 诊断卡片接线验证
+
+OverviewView 的诊断卡片接线已由前端侧完成（`loadDiagnosis()`，带未登录守卫与失败回退），Python 侧运行时验证通过：`GET /api/ai/diagnosis?userId=1` → `data.text` 单段 228 字、无换行。Day9 联调时直接走查即可。
+
+### 3. 【验收证据】热力图压测 < 200ms **PASS**（Day9 分工目标）
+
+三场景真实 HTTP 实测（6 网点 × 8 时段矩阵，Redis 缓存开启）：
+
+| 场景 | 次数 | 平均 | 最大 |
+|---|---|---|---|
+| 缓存命中 | 50 | 19.5 ms | 32.1 ms |
+| 缓存未命中（随机日期重新预测） | 30 | 18.2 ms | 30.0 ms |
+| 并发 20 线程 | 20 | 23.3 ms | 34.2 ms（总墙钟 61.6 ms） |
+
+全部远低于 200ms 目标，**验收通过**。注：若手动用浏览器工具测出 ~2000ms，是 `localhost` IPv6 解析回落所致，非服务问题（走 `127.0.0.1` / vite proxy 即正常）。
+
+### 4. 【联调环境】启动注意
+
+1. AI 服务按标准 `uvicorn main:app --port 8000` 启动（需 Redis 在 6379 运行）
+2. precheck 传 `TRANSFER` / `LOAN` 亦可（已兼容），但建议统一用 6 个标准枚举

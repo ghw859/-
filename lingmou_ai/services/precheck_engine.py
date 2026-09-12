@@ -7,6 +7,13 @@ from typing import Any, Dict, List, Tuple
 
 from config.settings import settings
 
+# 业务类型别名（Day 9 联调兼容）：Java DTO 注释示例使用 TRANSFER / LOAN，
+# 前端可能透传别名；统一归一化到 6 个标准枚举，避免误返 60004
+_BUSINESS_ALIASES = {
+    "TRANSFER": "LARGE_TRANSFER",
+    "LOAN": "LOAN_APPLICATION",
+}
+
 
 def _is_valid(value: Any) -> bool:
     """判定材料字段是否有效。
@@ -33,7 +40,7 @@ def check(
     """校验材料完整性。
 
     Args:
-        business_type: 业务类型枚举（如 OPEN_ACCOUNT）
+        business_type: 业务类型枚举（如 OPEN_ACCOUNT，兼容别名 TRANSFER / LOAN）
         materials:     前端提交的材料字段字典
 
     Returns:
@@ -43,6 +50,10 @@ def check(
         - required: 该业务必填字段名列表
         - checked:  本次已有效提交的字段名列表
     """
+    # 别名归一化：TRANSFER→LARGE_TRANSFER、LOAN→LOAN_APPLICATION
+    business_type = _BUSINESS_ALIASES.get(
+        str(business_type).upper(), str(business_type).upper()
+    )
     required = settings.business_materials.get(business_type)
     if required is None:
         raise ValueError(f"未知的业务类型：{business_type}")
