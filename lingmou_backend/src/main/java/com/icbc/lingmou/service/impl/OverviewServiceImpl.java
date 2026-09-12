@@ -36,6 +36,13 @@ public class OverviewServiceImpl implements OverviewService {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("MM-dd");
 
+    /** 信用分口径：与 CreditServiceImpl 保持一致 */
+    private static final int DEFAULT_SCORE = 100;
+    private static final int MIN_SCORE = 0;
+    private static final int MAX_SCORE = 100;
+    private static final int HIGH_SCORE_THRESHOLD = 90;
+    private static final int LOW_SCORE_THRESHOLD = 70;
+
     @Override
     public OverviewCardResponse getOverviewCards() {
         LocalDate today = LocalDate.now();
@@ -134,45 +141,50 @@ public class OverviewServiceImpl implements OverviewService {
     @Override
     public CreditTrendResponse getCreditTrend() {
         LocalDate today = LocalDate.now();
+        LocalDate windowStart = today.minusDays(6);
         List<String> dates = new ArrayList<>();
         List<Double> avgScores = new ArrayList<>();
         List<Integer> highScoreUsers = new ArrayList<>();
         List<Integer> lowScoreUsers = new ArrayList<>();
 
+        // 一次性取全量用户与窗口期内的信用分变更记录，避免逐日重复全表扫描
+        List<User> allUsers = userMapper.selectList(null);
+        List<CreditRecord> windowRecords = creditRecordMapper.selectList(
+            new LambdaQueryWrapper<CreditRecord>()
+                .ge(CreditRecord::getCreatedAt, windowStart.atStartOfDay())
+        );
+
         // 近7天趋势
         for (int i = 6; i >= 0; i--) {
             LocalDate date = today.minusDays(i);
+            LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
             dates.add(date.format(DATE_FMT));
 
-            // 当日有信用分变更的用户
-            List<CreditRecord> dayRecords = creditRecordMapper.selectList(
-                new LambdaQueryWrapper<CreditRecord>()
-                    .between(CreditRecord::getCreatedAt, date.atStartOfDay(), date.plusDays(1).atStartOfDay())
-            );
+            // 还原"该日终"各用户的信用分：当前分倒扣掉该日之后发生的所有变更。
+            // 直接取当前分会让 7 天恒为同一条直线，趋势图失去意义。
+            List<Integer> dayScores = allUsers.stream()
+                .map(u -> {
+                    int current = u.getCreditScore() != null ? u.getCreditScore() : DEFAULT_SCORE;
+                    int laterDelta = windowRecords.stream()
+                        .filter(r -> u.getId().equals(r.getUserId()))
+                        .filter(r -> r.getCreatedAt() != null && !r.getCreatedAt().isBefore(dayEnd))
+                        .mapToInt(r -> r.getAmount() != null ? r.getAmount() : 0)
+                        .sum();
+                    return Math.max(MIN_SCORE, Math.min(MAX_SCORE, current - laterDelta));
+                })
+                .toList();
 
-            // 简单处理：取所有用户的平均信用分（基于最新记录计算）
-            List<User> allUsers = userMapper.selectList(null);
-            if (!allUsers.isEmpty()) {
-                double avg = allUsers.stream()
-                    .mapToInt(u -> u.getCreditScore() != null ? u.getCreditScore() : 100)
-                    .average()
-                    .orElse(100.0);
-                avgScores.add(Math.round(avg * 10) / 10.0);
-
-                long high = allUsers.stream()
-                    .filter(u -> u.getCreditScore() != null && u.getCreditScore() >= 90)
-                    .count();
-                highScoreUsers.add((int) high);
-
-                long low = allUsers.stream()
-                    .filter(u -> u.getCreditScore() != null && u.getCreditScore() < 70)
-                    .count();
-                lowScoreUsers.add((int) low);
-            } else {
-                avgScores.add(100.0);
+            if (dayScores.isEmpty()) {
+                avgScores.add((double) DEFAULT_SCORE);
                 highScoreUsers.add(0);
                 lowScoreUsers.add(0);
+                continue;
             }
+
+            double avg = dayScores.stream().mapToInt(Integer::intValue).average().orElse(DEFAULT_SCORE);
+            avgScores.add(Math.round(avg * 10) / 10.0);
+            highScoreUsers.add((int) dayScores.stream().filter(s -> s >= HIGH_SCORE_THRESHOLD).count());
+            lowScoreUsers.add((int) dayScores.stream().filter(s -> s < LOW_SCORE_THRESHOLD).count());
         }
 
         return CreditTrendResponse.builder()

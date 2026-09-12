@@ -1,6 +1,7 @@
 package com.icbc.lingmou.task;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.icbc.lingmou.entity.Appointment;
 import com.icbc.lingmou.mapper.AppointmentMapper;
 import com.icbc.lingmou.service.CreditService;
@@ -46,8 +47,20 @@ public class AppointmentExpireTask {
         log.info("扫描到 {} 条过期预约，开始处理", expiredList.size());
 
         for (Appointment apt : expiredList) {
-            apt.setStatus("EXPIRED");
-            appointmentMapper.updateById(apt);
+            // 条件更新（CAS）：仅当记录仍处于"待办理"状态时才置为过期。
+            // 直接 updateById 是"先读后写"，多实例或重复扫描时同一条预约会被扣两次分
+            // （实测两个实例同时扫描 → 同一预约产生两条 -10 记录）。
+            int updated = appointmentMapper.update(null,
+                new LambdaUpdateWrapper<Appointment>()
+                    .eq(Appointment::getId, apt.getId())
+                    .in(Appointment::getStatus, "VIRTUAL", "ACTIVE")
+                    .set(Appointment::getStatus, "EXPIRED")
+            );
+
+            if (updated == 0) {
+                // 已被其他实例/上一轮处理过，跳过扣分，保证幂等
+                continue;
+            }
 
             // 信用分规则：超时未到扣10分
             creditService.autoAdjust(apt.getUserId(), -10, "预约超时未到");

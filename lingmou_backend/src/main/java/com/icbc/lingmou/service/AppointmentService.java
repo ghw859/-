@@ -6,6 +6,7 @@ import com.icbc.lingmou.dto.request.AppointmentRequest;
 import com.icbc.lingmou.dto.response.AppointmentResponse;
 import com.icbc.lingmou.entity.Appointment;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -34,9 +35,9 @@ public interface AppointmentService {
     void cancelAppointment(Long id, Long userId);
 
     /**
-     * 生成排队号
+     * 生成排队号（按网点 + 预约日期计数）
      */
-    String generateQueueNumber(Long branchId);
+    String generateQueueNumber(Long branchId, LocalDate appointmentDate);
 
     /**
      * 检查时段是否已约满（<=10人）

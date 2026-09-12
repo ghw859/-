@@ -1,6 +1,7 @@
 package com.icbc.lingmou.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -22,8 +23,9 @@ public class AppointmentRequest {
     @NotBlank(message = "业务类型不能为空")
     private String businessType;
 
-    @Schema(description = "预约日期", example = "2026-09-10")
+    @Schema(description = "预约日期（今天或之后）", example = "2026-09-10")
     @NotNull(message = "预约日期不能为空")
+    @FutureOrPresent(message = "预约日期不能早于今天")
     private LocalDate appointmentDate;
 
     @Schema(description = "时段，如 09:00-09:30", example = "09:00-09:30")

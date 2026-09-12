@@ -86,12 +86,17 @@ public class AuthServiceImpl implements AuthService {
     public void logout(String token) {
         // 将token加入黑名单
         long expiration = jwtConfig.getExpiration();
-        redisTemplate.opsForValue().set(
-            TOKEN_BLACKLIST_PREFIX + token,
-            "1",
-            expiration,
-            TimeUnit.MILLISECONDS
-        );
+        try {
+            redisTemplate.opsForValue().set(
+                TOKEN_BLACKLIST_PREFIX + token,
+                "1",
+                expiration,
+                TimeUnit.MILLISECONDS
+            );
+        } catch (Exception e) {
+            // Redis 不可用时不阻断登出：前端会清掉本地登录态，该 Token 到期前仍有效，这里只告警
+            log.warn("[Auth] Redis 不可用，登出黑名单写入失败，Token 将在自然过期前保持有效: {}", e.getMessage());
+        }
     }
 
     /**

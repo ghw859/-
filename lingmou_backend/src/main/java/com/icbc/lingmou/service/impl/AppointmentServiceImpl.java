@@ -24,9 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /**
@@ -45,8 +45,32 @@ public class AppointmentServiceImpl implements AppointmentService {
     private static final int MAX_PER_SLOT = 10; // 每时段最多10人
     private static final int CREDIT_LIMIT = 60; // 信用分低于60限制预约
 
+    /**
+     * 预约创建的分段锁（striped lock）
+     * "查冲突 → 查余量 → 生成排队号 → 落库"这一串是典型的 check-then-act，
+     * 并发下两个请求会同时通过容量校验，导致时段超卖、排队号重号。
+     * 这里按 (网点, 日期) 分段加锁把它们变成串行，锁对象数量固定，不会无限增长。
+     */
+    private static final Object[] BOOKING_LOCKS = new Object[64];
+
+    static {
+        for (int i = 0; i < BOOKING_LOCKS.length; i++) {
+            BOOKING_LOCKS[i] = new Object();
+        }
+    }
+
+    private Object bookingLock(Long branchId, LocalDate date) {
+        return BOOKING_LOCKS[Math.floorMod(Objects.hash(branchId, date), BOOKING_LOCKS.length)];
+    }
+
+    /**
+     * 创建预约。
+     *
+     * 注意：这里刻意不加 @Transactional —— 整段只有一条写操作（insert），
+     * 而分段锁必须在事务提交之后才释放才有意义：若由外层事务包住，
+     * 锁释放时 insert 尚未提交，后一个线程读不到前一条记录，容量校验依旧会串味。
+     */
     @Override
-    @Transactional
     public AppointmentResponse createAppointment(Long userId, AppointmentRequest request) {
         // 0. 检查信用分（低于阈值限制预约）
         User user = userMapper.selectById(userId);
@@ -64,39 +88,43 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new BusinessException(ResultCode.BRANCH_NOT_FOUND);
         }
 
-        // 2. 检查同一用户同日同时段是否已有预约（跨网点）
-        if (hasConflictAppointment(userId,
-            request.getAppointmentDate().toString(),
-            request.getTimeSlot())) {
-            throw new BusinessException(ResultCode.APPOINTMENT_CONFLICT);
-        }
-
-        // 3. 检查时段是否已满
-        if (isSlotFull(request.getBranchId(),
-            request.getAppointmentDate().toString(),
-            request.getTimeSlot())) {
-            throw new BusinessException(ResultCode.SLOT_FULL);
-        }
-
-        // 4. 创建预约
         Appointment appointment = new Appointment();
-        appointment.setUserId(userId);
-        appointment.setBranchId(request.getBranchId());
-        appointment.setBusinessType(request.getBusinessType());
-        appointment.setAppointmentDate(request.getAppointmentDate());
-        appointment.setTimeSlot(request.getTimeSlot());
-        appointment.setStatus("VIRTUAL");
-        appointment.setProgressStep(0);
 
-        // 生成排队号
-        String queueNumber = generateQueueNumber(request.getBranchId());
-        appointment.setQueueNumber(queueNumber);
+        // 2~4. 冲突校验 / 余量校验 / 排队号生成 / 落库，必须在同一把锁内串行完成
+        synchronized (bookingLock(request.getBranchId(), request.getAppointmentDate())) {
+            // 2. 检查同一用户同日同时段是否已有预约（跨网点）
+            if (hasConflictAppointment(userId,
+                request.getAppointmentDate().toString(),
+                request.getTimeSlot())) {
+                throw new BusinessException(ResultCode.APPOINTMENT_CONFLICT);
+            }
 
-        // 生成凭证号
-        String voucherNum = generateVoucherNum();
-        appointment.setVoucherNum(voucherNum);
+            // 3. 检查时段是否已满
+            if (isSlotFull(request.getBranchId(),
+                request.getAppointmentDate().toString(),
+                request.getTimeSlot())) {
+                throw new BusinessException(ResultCode.SLOT_FULL);
+            }
 
-        appointmentMapper.insert(appointment);
+            // 4. 创建预约
+            appointment.setUserId(userId);
+            appointment.setBranchId(request.getBranchId());
+            appointment.setBusinessType(request.getBusinessType());
+            appointment.setAppointmentDate(request.getAppointmentDate());
+            appointment.setTimeSlot(request.getTimeSlot());
+            appointment.setStatus("VIRTUAL");
+            appointment.setProgressStep(0);
+
+            // 生成排队号（按 网点 + 预约日期 计数，与"今天"无关）
+            String queueNumber = generateQueueNumber(request.getBranchId(), request.getAppointmentDate());
+            appointment.setQueueNumber(queueNumber);
+
+            // 生成凭证号
+            String voucherNum = generateVoucherNum();
+            appointment.setVoucherNum(voucherNum);
+
+            appointmentMapper.insert(appointment);
+        }
 
         return toResponse(appointment, branch.getName());
     }
@@ -147,10 +175,20 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new BusinessException(ResultCode.FORBIDDEN);
         }
 
-        // 检查状态：已取消、已完成、已过期的不能取消
+        // 检查状态：只有"未到店/已到店排队"可以取消；
+        // 一旦叫号或已进办理流程，取消会打断柜员手上的工单，必须走线下
         String status = appointment.getStatus();
-        if ("CANCELED".equals(status) || "COMPLETED".equals(status) || "EXPIRED".equals(status)) {
+        if ("CANCELED".equals(status)) {
             throw new BusinessException(ResultCode.APPOINTMENT_CANCELLED);
+        }
+        if ("COMPLETED".equals(status)) {
+            throw new BusinessException(ResultCode.APPOINTMENT_COMPLETED, "预约已办理完成，无法取消");
+        }
+        if ("EXPIRED".equals(status)) {
+            throw new BusinessException(ResultCode.APPOINTMENT_EXPIRED, "预约已过期，无法取消");
+        }
+        if ("CALLED".equals(status) || "PROCESSING".equals(status)) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "已叫号或办理中的预约无法自助取消，请联系大堂经理");
         }
 
         appointment.setStatus("CANCELED");
@@ -161,16 +199,16 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
-    public String generateQueueNumber(Long branchId) {
-        // 排队号格式：网点编号 + 当日序号（如 A001）
-        String prefix = String.valueOf(branchId); // 简单处理
+    public String generateQueueNumber(Long branchId, LocalDate appointmentDate) {
+        // 排队号格式：网点编号 + 该网点该日序号（如网点1当日第1位 → 1001）
+        String prefix = String.valueOf(branchId);
 
-        // 查询该网点今日预约数量
-        LocalDate today = LocalDate.now();
+        // 必须按"预约日期"计数，而不是按"今天"计数：
+        // 之前用 LocalDate.now() 统计，导致预约 8 天后的号仍然从 1001 起，不同预约重号
         Long count = appointmentMapper.selectCount(
             new LambdaQueryWrapper<Appointment>()
                 .eq(Appointment::getBranchId, branchId)
-                .eq(Appointment::getAppointmentDate, today)
+                .eq(Appointment::getAppointmentDate, appointmentDate)
         );
 
         return prefix + String.format("%03d", count + 1);
@@ -251,10 +289,14 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     /**
-     * 生成凭证号
+     * 生成凭证号（保持 V+数字 格式，与 API_DAY3 契约示例一致）
+     *
+     * 只取 System.currentTimeMillis() 时，同毫秒内的两个请求会生成同一个凭证号，
+     * 撞上 vouchers.voucher_num 的 UNIQUE 约束后整个预约直接失败，这里追加随机数避开。
      */
     private String generateVoucherNum() {
-        return "V" + System.currentTimeMillis();
+        return "V" + System.currentTimeMillis()
+            + String.format("%04d", ThreadLocalRandom.current().nextInt(10000));
     }
 
     @Override

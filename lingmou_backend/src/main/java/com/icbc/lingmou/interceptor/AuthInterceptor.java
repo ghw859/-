@@ -47,9 +47,17 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
 
         // 检查 Token 是否已登出（Redis 黑名单）
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(TOKEN_BLACKLIST_PREFIX + token))) {
-            log.warn("[Auth] Token 已登出, userId={}", jwtUtils.getUserIdFromToken(token));
-            throw new BusinessException(ResultCode.UNAUTHORIZED, "Token 已登出，请重新登录");
+        // Redis 不可用时降级放行：黑名单只是"提前失效"的增强手段，
+        // 而 JWT 自身签名与过期时间已在上面校验过，不该因为缓存故障让整个登录态接口全部返回 90000
+        try {
+            if (Boolean.TRUE.equals(redisTemplate.hasKey(TOKEN_BLACKLIST_PREFIX + token))) {
+                log.warn("[Auth] Token 已登出, userId={}", jwtUtils.getUserIdFromToken(token));
+                throw new BusinessException(ResultCode.UNAUTHORIZED, "Token 已登出，请重新登录");
+            }
+        } catch (BusinessException e) {
+            throw e; // 业务异常（已登出）要正常抛出，不能被下面的兜底吞掉
+        } catch (Exception e) {
+            log.warn("[Auth] Redis 不可用，本次跳过登出黑名单校验（JWT 签名校验已通过）: {}", e.getMessage());
         }
 
         // 提取用户信息放入request，后续Controller可用 request.getAttribute("userId") 获取

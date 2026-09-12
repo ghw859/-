@@ -18,7 +18,10 @@ spring:
       port: 6379
       password: ${REDIS_PASSWORD:}
       database: 0
-      timeout: 5000ms
+      timeout: 1000ms
+      # Redis 不可用时鉴权走的是"降级放行"分支，超时值直接等于每个请求的额外等待时间：
+      # 原来的 5s 会让页面看起来像卡死，1s 足以覆盖正常的 Redis 命令耗时
+      connect-timeout: 300ms
 
   # Jackson日期格式
   jackson:
