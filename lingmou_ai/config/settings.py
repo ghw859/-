@@ -54,6 +54,8 @@ BUSINESS_KEYWORDS = {
     "DEPOSIT":           ["存款", "存钱", "存入", "存"],
     "LOAN_APPLICATION":  ["贷款", "借款", "贷一下"],
     "WEALTH_MGMT":       ["理财", "投资", "买基金", "买产品"],
+    # Day 10：取现类关键词补全（"我要取现五万元"金额已可解析，此处让兜底解析同步返回业务类型）
+    "CASH_RESERVE":     ["取现", "取钱", "提现", "支取"],
 }
 
 # 各业务期望解析出的字段（Day 5 置信度计算用）
@@ -64,6 +66,7 @@ BUSINESS_EXPECTED_FIELDS = {
     "DEPOSIT":           ["amount"],
     "LOAN_APPLICATION":  ["name", "idCard", "amount", "loanTerm"],
     "WEALTH_MGMT":       ["name", "idCard", "investAmount"],
+    "CASH_RESERVE":     ["idCard", "amount", "date"],
 }
 
 
@@ -104,6 +107,13 @@ class Settings:
 
     # Java 后端地址（Day 6 起可选调用；无鉴权时不调用）
     java_backend_url: str = os.getenv("JAVA_BACKEND_URL", "http://localhost:8080")
+
+    # CORS 允许来源（Day 10 容器化：nginx 反代模式下浏览器同源不触发 CORS，
+    # 跨域直连场景经 CORS_ALLOW_ORIGINS 环境变量配置，逗号分隔）
+    cors_allow_origins: list = field(default_factory=lambda: os.getenv(
+        "CORS_ALLOW_ORIGINS",
+        "http://localhost:5173,http://localhost:8080",
+    ).split(","))
 
 
 settings = Settings()

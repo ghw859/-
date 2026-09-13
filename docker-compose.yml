@@ -1,0 +1,103 @@
+# ICBC · 灵枢 全栈容器编排（Day 10）
+# 前置：Docker Desktop 4.25+（Compose v2.24+，ai 服务 env_file 用到 required: false）
+# 启动：docker compose up -d --build
+# 验证：浏览器 http://localhost （前端入口，nginx 统一代理后端与 AI）
+# 密钥：root .env（DB_PASSWORD/JWT_SECRET）+ lingmou_ai/.env（DASHSCOPE_API_KEY），均不入 Git
+
+name: lingmou
+
+services:
+  # ---------- MySQL 8 ----------
+  mysql:
+    image: mysql:8.0
+    container_name: lingmou-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: lingmou
+      TZ: Asia/Shanghai
+    # 与 README 建库语句字符集一致（utf8mb4_general_ci）
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    # 宿主机调试需要再放开；默认注释避免与本地 MySQL 端口冲突
+    # ports:
+    #   - "3306:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  # ---------- Redis 7 ----------
+  redis:
+    image: redis:7-alpine
+    container_name: lingmou-redis
+    volumes:
+      - redis_data:/data
+    # ports:
+    #   - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+
+  # ---------- AI 服务（Python FastAPI :8000）----------
+  ai:
+    build: ./lingmou_ai
+    container_name: lingmou-ai
+    # 团队成员 clone 后若无该文件（已 gitignore），AI 自动走规则降级，不影响启动
+    env_file:
+      - path: ./lingmou_ai/.env
+        required: false
+    environment:
+      # environment 优先级高于 env_file：容器内必须指向 redis 服务名
+      REDIS_URL: redis://redis:6379/0
+      CORS_ALLOW_ORIGINS: "http://localhost,http://localhost:5173,http://localhost:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"   # 直连调试用；演示走 nginx 统一入口，可注释
+    # 镜像内自带 /api/ai/health 健康检查
+
+  # ---------- Java 后端（Spring Boot :8080）----------
+  backend:
+    build: ./lingmou_backend
+    container_name: lingmou-backend
+    environment:
+      # 用 Spring Boot 松散绑定环境变量覆盖 application.yml 的 localhost，Java 代码零改动
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/lingmou?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowPublicKeyRetrieval=true
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      SPRING_DATA_REDIS_HOST: redis
+      REDIS_PASSWORD: ""
+      JWT_SECRET: ${JWT_SECRET:-LingMouZhiBanTong2026SecretKeyForJWTAtLeast32Chars}
+      AI_BASE_URL: http://ai:8000
+      UPLOAD_DIR: /app/uploads
+      TZ: Asia/Shanghai
+    volumes:
+      - backend_uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"   # 直连调试用；演示走 nginx 统一入口，可注释
+
+  # ---------- 前端（Vue3 + nginx :80）----------
+  frontend:
+    build: ./gonghang_vue3
+    container_name: lingmou-frontend
+    depends_on:
+      - backend
+      - ai
+    ports:
+      - "80:80"       # 演示入口：http://localhost
+    # nginx.conf 内对 ai/backend 做 TCP 探测无意义，起不出来时浏览器直接报 502，可定位
+
+volumes:
+  mysql_data:
+  redis_data:
+  backend_uploads:

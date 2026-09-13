@@ -1,0 +1,8 @@
+# 构建产物（容器内由 Maven 重新打包）
+target/
+# 上传文件由 volume 挂载，不进镜像
+uploads/
+# 版本与工具
+.git/
+.gitignore
+*.log

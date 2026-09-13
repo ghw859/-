@@ -1,0 +1,8 @@
+# 依赖与构建产物（容器内重新安装/打包）
+node_modules/
+dist/
+# 版本与工具
+.git/
+.gitignore
+*.log
+.vscode/

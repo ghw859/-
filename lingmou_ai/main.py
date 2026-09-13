@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # 启动时加载 .env 文件（必须在 import services 之前）
 load_dotenv()
 
+from config.settings import settings
 from routers.health import router as health_router
 from routers.chat import router as chat_router
 from routers.chat_ws import router as chat_ws_router
@@ -23,7 +24,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:8080"],
+    allow_origins=settings.cors_allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -1,0 +1,13 @@
+# 密钥严禁进入镜像（由 compose/env 注入）
+.env
+
+# Python 产物
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# 日志与临时文件
+*.log
+
+# 版本与工具
+.git/
