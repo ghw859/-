@@ -3,7 +3,7 @@ package com.icbc.lingmou.common;
 /**
  * 错误码定义
  * 段位分配（5位数）：
- *   用户 1xxxx / 预约 2xxxx / 网点 3xxxx / 预填单 4xxxx / 审计 5xxxx / AI 6xxxx / 系统 9xxxx
+ * 用户 1xxxx / 预约 2xxxx / 网点 3xxxx / 预填单 4xxxx / 审计 5xxxx / AI 6xxxx / 系统 9xxxx
  */
 public enum ResultCode {
 
@@ -34,6 +34,7 @@ public enum ResultCode {
     APPOINTMENT_CANCELLED(20006, "预约已取消"),
     VOUCHER_NUM_NOT_FOUND(20007, "凭证号不存在"),
     VOUCHER_NUM_GENERATE_FAIL(20008, "凭证号生成失败"),
+    VOUCHER_ALREADY_BOUND(20009, "凭证号已绑定其他预约"),
 
     // ========== 网点管理模块（3xxxx） ==========
     BRANCH_NOT_FOUND(30001, "网点不存在"),

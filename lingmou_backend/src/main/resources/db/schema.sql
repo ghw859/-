@@ -176,3 +176,37 @@ INSERT INTO branches (branch_code, name, busy_level, distance, services, wait_ti
 ('b4', '中关村科技创新特色支行', 'moderate', 3800, '["对公"]',                      12, 25, 12, '6/8',  '[8,15,10,14,11,12]', '北京市海淀区中关村大街22号',                '010-62599588', '09:00 - 17:00', 'fa-solid fa-microchip',  'bg-purple-50', 'text-purple-600', 0),
 ('b5', '望京SOHO社区支行',       'free',     3200, '["自助发卡","无障碍"]',          5, 10,  4, '4/4',  '[8,6,4,7,5,5]',      '北京市朝阳区望京街10号望京SOHO塔1座',       '010-59799588', '09:00 - 17:00', 'fa-solid fa-shop',       'bg-emerald-50', 'text-emerald-600', 0),
 ('b6', '国贸CBD中心支行',        'busy',     1800, '["外汇","VIP","对公"]',          20, 38, 15, '7/8',  '[15,18,22,17,20,20]', '北京市朝阳区建国门外大街1号国贸大厦',         '010-65059588', '09:00 - 17:00', 'fa-solid fa-city',       'bg-blue-50',    'text-blue-600',    0);
+
+-- ============================================
+-- 演示账号与演示数据种子（Day 10 容器化演示配套）
+-- 两个账号密码均为 123456（BCrypt）：
+--   13800138000 / 123456  客户 张伟 —— 进度页多状态、预填单、信用分演示
+--   audit001    / 123456  审计员 李审 —— 区块链可信审计页演示（AUDITOR 角色）
+-- 演示数据为固定日期（2026-09），重新部署到其他时间语境请酌情调整
+-- ============================================
+INSERT INTO users (username, password, real_name, id_card, phone, role, customer_level, credit_score) VALUES
+('13800138000', '$2a$10$5oMRmeNJylyFsz5i3D8WjOQJkadqmdbA4PbcaG/S0hVG6.HmqU8f6', '张伟', '110101199001011234', '13800138000', 'CUSTOMER', 'GOLD',   88),
+('audit001',    '$2a$10$5oMRmeNJylyFsz5i3D8WjOQJkadqmdbA4PbcaG/S0hVG6.HmqU8f6', '李审', '110101199001019999', '13900139000', 'AUDITOR',  'NORMAL', 100);
+
+-- 演示预约：覆盖进度页三种状态展示（已完成/已失效/虚拟号），同用户三个不同日期时段不违反 uk_date_slot_user
+INSERT INTO appointments (user_id, branch_id, business_type, appointment_date, time_slot, queue_number, status, voucher_num, progress_step) VALUES
+(1, 1, '大额现金提取', '2026-09-10', '09:30-10:00', 'A012', 'COMPLETED', 'V20260910093001234', 4),
+(1, 4, '对公跨行转账', '2026-09-11', '14:00-14:30', 'B003', 'EXPIRED',   'V20260911140056789', 0),
+(1, 2, '储蓄卡开户',   '2026-09-14', '10:00-10:30', NULL,   'VIRTUAL',   'V20260914100002468', 0);
+
+-- 对应凭证关联行（对齐 VoucherServiceImpl.saveAppointmentVoucher 落库形态）
+INSERT INTO vouchers (voucher_num, appointment_id, qrcode_content, sn) VALUES
+('V20260910093001234', 1, 'LINGMOU://V20260910093001234', 'SN17603826000001'),
+('V20260911140056789', 2, 'LINGMOU://V20260911140056789', 'SN17603826000002'),
+('V20260914100002468', 3, 'LINGMOU://V20260914100002468', 'SN17603826000003');
+
+-- 演示信用分记录：与 users.credit_score=88 自洽（初始90 + 办结3 - 取消5）
+INSERT INTO credit_records (user_id, change_type, amount, reason, operator_id) VALUES
+(1, 'ADD', 3, '预约按时办结加3分', 0),
+(1, 'DEDUCT', 5, '取消预约扣5分', 0);
+
+-- 演示预填单 1 条草稿（供"我的预填单"页展示）
+INSERT INTO pre_forms (user_id, business_type, raw_text, parsed_json, status) VALUES
+(1, 'CASH_RESERVE', '姓名：张伟
+身份证号：110101199001011234
+取现五万元', '{"name":"张伟","idCard":"110101199001011234","amount":50000}', 'DRAFT');

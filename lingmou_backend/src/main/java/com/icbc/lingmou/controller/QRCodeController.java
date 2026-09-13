@@ -42,9 +42,9 @@ import java.util.Map;
  * （预检拦截是正常业务分支，不是系统错误；未知业务 60004 仍走错误码）
  * 3. 预检通过 → 生成 T 凭证号 + 业务直通码内容 → 写 vouchers 表（可挂 appointment_id）
  * 4. 同步写 audit_logs 哈希链（VOUCHER_GENERATE，best-effort：写链失败不回滚直通码，
- *    响应 data.auditSynced=false 供前端标注"存证同步中"），区块链审计页 GET /api/audit/my 可查
+ * 响应 data.auditSynced=false 供前端标注"存证同步中"），区块链审计页 GET /api/audit/my 可查
  * 5. 预约创建后 → PUT /api/qrcode/{num}/bindAppointment 回填 appointment_id（Day9 #4：
- *    前端流程是"预填单→直通码→去预约"，generate 时预约尚不存在，appointmentId 允许为空）
+ * 前端流程是"预填单→直通码→去预约"，generate 时预约尚不存在，appointmentId 允许为空）
  */
 @Slf4j
 @Tag(name = "业务直通码", description = "生成办理业务的业务直通码（二维码）")
@@ -176,17 +176,16 @@ public class QRCodeController {
     // 直通码↔预约绑定（Day9 #4：generate 时预约尚不存在，预约创建后回填关联）
     // ======================================================================
 
-    @Operation(summary = "直通码绑定预约",
-            description = "预约创建成功后回填 vouchers.appointment_id：\n"
-                    + "- T 直通码已有行 → 直接更新 appointment_id；\n"
-                    + "- V 预约凭证不在 vouchers 表（历史数据）→ 幂等补落关联行；\n"
-                    + "- T 码不存在 → 20007。预约必须存在且属于当前登录用户。")
+    @Operation(summary = "直通码绑定预约", description = "预约创建成功后回填 vouchers.appointment_id：\n"
+            + "- T 直通码已有行 → 直接更新 appointment_id；\n"
+            + "- V 预约凭证不在 vouchers 表（历史数据）→ 幂等补落关联行；\n"
+            + "- T 码不存在 → 20007；\n"
+            + "- 已被其他预约绑定的凭证拒绝重绑 → 20009（同预约重复调用幂等放行）。"
+            + "预约必须存在且属于当前登录用户。")
     @PutMapping("/{voucherNum}/bindAppointment")
     public Result<Map<String, Object>> bindAppointment(
-            @Parameter(description = "凭证号：T 直通码或 V 预约凭证")
-            @PathVariable String voucherNum,
-            @Parameter(description = "预约ID（POST /api/appointments 返回的 id）")
-            @RequestParam Long appointmentId,
+            @Parameter(description = "凭证号：T 直通码或 V 预约凭证") @PathVariable String voucherNum,
+            @Parameter(description = "预约ID（POST /api/appointments 返回的 id）") @RequestParam Long appointmentId,
             HttpServletRequest httpRequest) {
 
         Long userId = (Long) httpRequest.getAttribute("userId");
@@ -208,6 +207,12 @@ public class QRCodeController {
 
         Voucher voucher = voucherService.findByVoucherNum(voucherNum);
         if (voucher != null) {
+            // 防串号硬约束：已被其他预约绑定的凭证拒绝重绑（同预约重复调用幂等放行）。
+            // 前端 sessionStorage 的"已绑定跳过"只是软防，跨会话/跨标签页场景由这里兜底。
+            if (voucher.getAppointmentId() != null
+                    && !java.util.Objects.equals(voucher.getAppointmentId(), appointmentId)) {
+                throw new BusinessException(ResultCode.VOUCHER_ALREADY_BOUND);
+            }
             // T 直通码（或已落行的 V）：补/更新 appointment_id
             voucher.setAppointmentId(appointmentId);
             voucherService.save(voucher);
