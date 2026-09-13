@@ -59,13 +59,17 @@ const stats = computed(() => {
 // 时间范围判断
 function inTimeRange(timestamp: string, range: string): boolean {
   if (range === 'all') return true
-  const logDate = new Date(timestamp.replace(/\//g, '-'))
+  // 兼容三种来源：后端 "2026-09-13 10:00:00"、toLocaleString "2026/9/13 10:00"。
+  // 空格分隔在 Safari 会解析成 Invalid Date（导致筛选后列表全空），统一把空格换成 T。
+  const normalized = timestamp.replace(/\//g, '-').replace(' ', 'T')
+  const logDate = new Date(normalized)
+  if (isNaN(logDate.getTime())) return true // 解析失败不做时间过滤，避免误清空
   const now = new Date()
   const diff = now.getTime() - logDate.getTime()
   const oneDay = 24 * 60 * 60 * 1000
-  if (range === 'today') return diff < oneDay && diff >= 0
-  if (range === 'week') return diff < 7 * oneDay
-  if (range === 'month') return diff < 30 * oneDay
+  if (range === 'today') return diff >= 0 && diff < oneDay
+  if (range === 'week') return diff >= 0 && diff < 7 * oneDay
+  if (range === 'month') return diff >= 0 && diff < 30 * oneDay
   return true
 }
 
@@ -207,7 +211,11 @@ function exportSelectedPDF() {
 
 ICBC · 灵枢智慧银行服务平台`
 
-  downloadFile(pdfContent, `预约凭证汇总_${new Date().toLocaleDateString('zh-CN')}.txt`, 'text/plain')
+  // 文件名不能含 / 等字符：toLocaleDateString('zh-CN') 会产出 "2026/9/13"，
+  // 直接拼进 download 属性会被浏览器当成路径分隔符，这里统一手工格式化为 2026-09-13
+  const d = new Date()
+  const datePart = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  downloadFile(pdfContent, `预约凭证汇总_${datePart}.txt`, 'text/plain')
 }
 
 // 批量删除选中的记录

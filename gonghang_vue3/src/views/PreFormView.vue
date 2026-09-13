@@ -408,8 +408,9 @@ async function proceedGenerateQR() {
   }
 
   // 预填单落库。失败就停在这里保留现场，不能跳走假装成功
+  let created: any = null
   try {
-    const created = (await request.post('/api/preforms',
+    created = (await request.post('/api/preforms',
       buildPreFormPayload(bizType, extraDataMap))) as any
     preFormList.value.unshift(created)
   } catch (e: any) {

@@ -1,0 +1,7 @@
+﻿python : C:\Program Files\python\python.exe: No module named uvicorn
+At line:15 char:1668
++ ... lingmou_ai; python -m uvicorn main:app --host 127.0.0.1 --port 8000 2 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Program File...e named uvicorn:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
