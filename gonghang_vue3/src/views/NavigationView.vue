@@ -1111,15 +1111,8 @@ function getSlotTimeClass(s: { capacity: number; isPast: boolean }, idx: number)
             <!-- 迷你激活二维码（仅待激活状态显示） -->
             <div v-if="a.status === 'virtual'" class="flex items-center gap-2 bg-white rounded-xl p-2 border border-slate-200">
               <div class="w-12 h-12 bg-white border border-slate-300 p-1 shrink-0">
-                <div class="grid grid-cols-3 gap-0.5 w-full h-full">
-                  <div class="border border-slate-700 aspect-square rounded-sm"></div>
-                  <div class="flex flex-col justify-between p-0.5"><span class="block bg-slate-700 h-0.5 w-full"></span><span class="block bg-slate-700 h-0.5 w-1/2"></span></div>
-                  <div class="border border-slate-700 aspect-square rounded-sm ml-auto"></div>
-                  <div class="col-span-2 space-y-0.5"><span class="block bg-slate-700 h-0.5 w-full"></span><span class="block bg-slate-700 h-0.5 w-2/3"></span></div>
-                  <div class="bg-slate-700 aspect-square m-auto"></div>
-                  <div class="border border-slate-700 aspect-square rounded-sm mt-auto"></div>
-                  <div class="col-span-2 flex flex-col justify-end gap-0.5 mt-auto"><span class="block bg-slate-700 h-0.5 w-full"></span><span class="block bg-slate-700 h-0.5 w-1/2"></span></div>
-                </div>
+                <!-- 真实激活码：后端 ZXing PNG -->
+                <img :src="`/api/qrcode/${a.voucherNum}/image`" alt="激活码" class="w-full h-full object-contain" />
               </div>
               <div class="text-[10px] font-bold text-slate-500 leading-tight">到店扫描此码激活<br><span class="text-slate-400">转为红色预约号享优先叫号</span></div>
             </div>
@@ -1160,18 +1153,25 @@ function getSlotTimeClass(s: { capacity: number; isPast: boolean }, idx: number)
             <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">预约凭证二维码</span>
             <div class="inline-block bg-white rounded-xl p-3 border-2 border-cyan-400 shadow-md">
               <div class="relative p-1.5 bg-white border border-slate-200 rounded-lg shadow-inner">
-                <div class="w-28 h-28 flex flex-wrap items-center justify-center text-slate-800 opacity-90">
-                  <div class="grid grid-cols-3 gap-1.5 w-full h-full p-0.5">
-                    <div class="border-[3px] border-slate-800 aspect-square rounded-sm"></div>
-                    <div class="flex flex-col justify-between p-0.5"><span class="block bg-slate-800 h-0.5 w-full"></span><span class="block bg-slate-800 h-0.5 w-1/2"></span></div>
-                    <div class="border-[3px] border-slate-800 aspect-square rounded-sm ml-auto"></div>
-                    <div class="col-span-2 space-y-0.5"><span class="block bg-slate-800 h-0.5 w-full"></span><span class="block bg-slate-800 h-0.5 w-3/4"></span></div>
-                    <div class="bg-slate-800 aspect-square m-auto"></div>
-                    <div class="border-[3px] border-slate-800 aspect-square rounded-sm mt-auto"></div>
-                    <div class="col-span-2 flex flex-col justify-end gap-0.5 mt-auto"><span class="block bg-slate-800 h-0.5 w-full"></span><span class="block bg-slate-800 h-0.5 w-1/2"></span></div>
+                <!-- 真实凭证码：后端 ZXing PNG（接口公开放行），仅无凭证号时降级为装饰占位码 -->
+                <img v-if="detailAppt.voucherNum"
+                  :src="`/api/qrcode/${detailAppt.voucherNum}/image`"
+                  alt="预约凭证二维码"
+                  class="w-28 h-28 object-contain" />
+                <template v-else>
+                  <div class="w-28 h-28 flex flex-wrap items-center justify-center text-slate-800 opacity-90">
+                    <div class="grid grid-cols-3 gap-1.5 w-full h-full p-0.5">
+                      <div class="border-[3px] border-slate-800 aspect-square rounded-sm"></div>
+                      <div class="flex flex-col justify-between p-0.5"><span class="block bg-slate-800 h-0.5 w-full"></span><span class="block bg-slate-800 h-0.5 w-1/2"></span></div>
+                      <div class="border-[3px] border-slate-800 aspect-square rounded-sm ml-auto"></div>
+                      <div class="col-span-2 space-y-0.5"><span class="block bg-slate-800 h-0.5 w-full"></span><span class="block bg-slate-800 h-0.5 w-3/4"></span></div>
+                      <div class="bg-slate-800 aspect-square m-auto"></div>
+                      <div class="border-[3px] border-slate-800 aspect-square rounded-sm mt-auto"></div>
+                      <div class="col-span-2 flex flex-col justify-end gap-0.5 mt-auto"><span class="block bg-slate-800 h-0.5 w-full"></span><span class="block bg-slate-800 h-0.5 w-1/2"></span></div>
+                    </div>
                   </div>
-                </div>
-                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white text-[7px] font-black px-1 rounded shadow border border-white scale-90">直通</div>
+                  <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white text-[7px] font-black px-1 rounded shadow border border-white scale-90">直通</div>
+                </template>
               </div>
               <div class="mt-1.5 text-[10px] font-mono font-bold text-slate-700">
                 <span class="text-slate-400">SN:</span> <span class="text-blue-600">{{ detailAppt.voucherNum }}</span>
@@ -1423,16 +1423,20 @@ function getSlotTimeClass(s: { capacity: number; isPast: boolean }, idx: number)
           <div class="shrink-0">
             <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider text-center mb-1">激活码</div>
             <div class="w-28 h-28 bg-white rounded-lg border-2 border-slate-300 p-2 relative">
-              <div class="grid grid-cols-3 gap-1 w-full h-full">
-                <div class="border-2 border-slate-700 aspect-square rounded-sm"></div>
-                <div class="flex flex-col justify-between p-0.5"><span class="block bg-slate-700 h-0.5 w-full"></span><span class="block bg-slate-700 h-0.5 w-1/2"></span></div>
-                <div class="border-2 border-slate-700 aspect-square rounded-sm ml-auto"></div>
-                <div class="col-span-2 space-y-0.5"><span class="block bg-slate-700 h-0.5 w-full"></span><span class="block bg-slate-700 h-0.5 w-2/3"></span></div>
-                <div class="bg-slate-700 aspect-square m-auto"></div>
-                <div class="border-2 border-slate-700 aspect-square rounded-sm mt-auto"></div>
-                <div class="col-span-2 flex flex-col justify-end gap-0.5 mt-auto"><span class="block bg-slate-700 h-0.5 w-full"></span><span class="block bg-slate-700 h-0.5 w-1/2"></span></div>
-              </div>
-              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-slate-500 text-white text-[7px] font-black px-1 py-0.5 rounded border border-white scale-90">激活</div>
+              <!-- 真实激活码：后端 ZXing PNG，仅无凭证号时降级为装饰占位码 -->
+              <img v-if="voucherNum" :src="`/api/qrcode/${voucherNum}/image`" alt="激活码" class="w-full h-full object-contain" />
+              <template v-else>
+                <div class="grid grid-cols-3 gap-1 w-full h-full">
+                  <div class="border-2 border-slate-700 aspect-square rounded-sm"></div>
+                  <div class="flex flex-col justify-between p-0.5"><span class="block bg-slate-700 h-0.5 w-full"></span><span class="block bg-slate-700 h-0.5 w-1/2"></span></div>
+                  <div class="border-2 border-slate-700 aspect-square rounded-sm ml-auto"></div>
+                  <div class="col-span-2 space-y-0.5"><span class="block bg-slate-700 h-0.5 w-full"></span><span class="block bg-slate-700 h-0.5 w-2/3"></span></div>
+                  <div class="bg-slate-700 aspect-square m-auto"></div>
+                  <div class="border-2 border-slate-700 aspect-square rounded-sm mt-auto"></div>
+                  <div class="col-span-2 flex flex-col justify-end gap-0.5 mt-auto"><span class="block bg-slate-700 h-0.5 w-full"></span><span class="block bg-slate-700 h-0.5 w-1/2"></span></div>
+                </div>
+                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-slate-500 text-white text-[7px] font-black px-1 py-0.5 rounded border border-white scale-90">激活</div>
+              </template>
             </div>
           </div>
           <div class="flex-1 text-center">

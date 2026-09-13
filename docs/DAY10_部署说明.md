@@ -39,7 +39,8 @@ docker compose ps
 
 # 4. 初始化数据库表（首次部署）
 #    MySQL 容器已自动建库 lingmou（utf8mb4），表结构需手动导入 schema.sql
-#    （MyBatis-Plus 不自动建表）：
+#    （MyBatis-Plus 不自动建表）。schema.sql 已含演示数据种子：
+#    2 个演示账号 + 3 条历史预约 + 凭证关联行 + 信用分记录 + 1 条预填单草稿：
 docker compose exec -T mysql mysql -uroot -p"$(grep DB_PASSWORD .env | cut -d= -f2)" lingmou < lingmou_backend/src/main/resources/db/schema.sql
 ```
 
@@ -51,7 +52,7 @@ docker compose exec -T mysql mysql -uroot -p"$(grep DB_PASSWORD .env | cut -d= -
 | 2 | 后端探活 | 浏览器 `http://localhost/api/test` | `{"code":0,...}` |
 | 3 | AI 直连 | `http://localhost:8000/api/ai/health` | code=0 |
 | 4 | AI 经 nginx | 前端页发起数字人对话 | 正常回复（规则降级版） |
-| 5 | 前端入口 | `http://localhost` | 登录页可登录（13800138000/123456） |
+| 5 | 前端入口 | `http://localhost` | 登录页可登录（客户 `13800138000/123456`，进度/预填单/信用分演示；审计员 `audit001/123456`，区块链审计页演示；账号来自 schema.sql 种子） |
 | 6 | T3 主链路 | 预填单 → 直通码 → 预约 | 材料预检 + T 码签发正常 |
 | 7 | 热力图 | 首页热力图卡片 | 6 网点 × 8 时段 |
 | 8 | WebSocket | 数字人页发消息 | 收到回复，无断连 |
