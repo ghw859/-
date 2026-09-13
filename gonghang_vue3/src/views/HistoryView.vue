@@ -1,8 +1,21 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuditLogStore, type AuditLog, type AuditStatus, type BizType } from '../stores/auditLog'
 
 const auditLog = useAuditLogStore()
+
+// 区块链完整性校验结果：true=链完整；false=存证被篡改/断链；null=后端不可达（本地降级数据）
+const chainIntact = ref<boolean | null>(null)
+const chainLoading = ref(true)
+
+onMounted(async () => {
+  // 优先拉取后端链上存证（含真实 hash / T 凭证号 / 脱敏 PII），失败自动回退本地数据
+  await auditLog.fetchRemote()
+  if (auditLog.remoteLoaded) {
+    chainIntact.value = await auditLog.verifyChainRemote()
+  }
+  chainLoading.value = false
+})
 
 // 筛选条件
 const filterBizType = ref<BizType | 'all'>('all')
@@ -28,12 +41,17 @@ const bizTypeOptions = [
   { value: 'fx_exchange' as const, label: '外币兑换' },
 ]
 
+/** 业务类型比较：后端存证为大写枚举（CASH_RESERVE），本地降级数据为小写，统一忽略大小写 */
+function bizTypeIs(log: AuditLog, type: BizType): boolean {
+  return String(log.bizType).toLowerCase() === type
+}
+
 // 统计数据
 const stats = computed(() => {
   const all = filteredList.value
   const total = all.length
   // 转账汇款 = 对公跨行转账 + 对公现金缴款
-  const transfer = all.filter(l => l.bizType === 'corp_transfer' || l.bizType === 'cash_deposit').length
+  const transfer = all.filter(l => bizTypeIs(l, 'corp_transfer') || bizTypeIs(l, 'cash_deposit')).length
   const other = total - transfer
   return { total, transfer, other }
 })
@@ -54,9 +72,9 @@ function inTimeRange(timestamp: string, range: string): boolean {
 // 筛选后的列表
 const filteredList = computed(() => {
   let list = [...auditLog.auditLogs]
-  // 业务类型筛选
+  // 业务类型筛选（兼容后端大写枚举）
   if (filterBizType.value !== 'all') {
-    list = list.filter(a => a.bizType === filterBizType.value)
+    list = list.filter(a => bizTypeIs(a, filterBizType.value as BizType))
   }
   // 状态筛选
   if (filterStatus.value !== 'all') {
@@ -245,8 +263,8 @@ function renderCorpTransferExtra(log: AuditLog) {
   return [
     { label: '付款单位', value: log.extraData.payerName || '未填写' },
     { label: '付款账号', value: log.extraData.payerAccount || '未填写' },
-    { label: '收款单位', value: log.extraData.recvName || '未填写' },
-    { label: '收款账号', value: log.extraData.recvCard || '未填写' },
+    { label: '收款单位', value: log.extraData.recvName || log.extraData.payeeName || '未填写' },
+    { label: '收款账号', value: log.extraData.recvCard || log.extraData.payeeAccount || '未填写' },
     { label: '收款银行', value: log.extraData.recvBank || '未填写', span: 2 },
     { label: '转账金额', value: log.extraData.amount ? `${log.extraData.amount}元` : '未填写' },
     { label: '是否加急', value: log.extraData.urgent === 'yes' ? '是' : '否' },
@@ -287,7 +305,8 @@ function renderFxExchangeExtra(log: AuditLog) {
 interface FieldItem { label: string; value: string; span?: number }
 
 function getFieldsForBizType(log: AuditLog): FieldItem[] {
-  switch (log.bizType) {
+  // 后端存证 bizType 为大写枚举，统一转小写走本地渲染函数
+  switch (String(log.bizType).toLowerCase()) {
     case 'cash_reserve': return renderCashReserveExtra(log)
     case 'open_card': return renderOpenCardExtra(log)
     case 'corp_transfer': return renderCorpTransferExtra(log)
@@ -343,6 +362,30 @@ function getFieldsForBizType(log: AuditLog): FieldItem[] {
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- 区块链完整性校验横幅 -->
+    <div v-if="auditLog.remoteLoaded"
+      :class="['backdrop-blur-2xl p-3 rounded-2xl border flex items-center gap-2.5 text-xs font-bold',
+        chainIntact === true
+          ? 'bg-emerald-50/70 border-emerald-200/80 text-emerald-700'
+          : 'bg-rose-50/70 border-rose-200/80 text-rose-700']">
+      <i :class="chainIntact === true ? 'fa-solid fa-link' : 'fa-solid fa-link-slash'"
+        class="text-sm shrink-0"></i>
+      <span v-if="chainLoading" class="text-slate-500">
+        <i class="fa-solid fa-spinner animate-spin mr-1"></i>正在校验存证链完整性…
+      </span>
+      <span v-else-if="chainIntact === true">
+        区块链存证校验通过：共 {{ auditLog.auditLogs.length }} 条记录，哈希链完整、内容未被篡改
+      </span>
+      <span v-else>
+        存证链校验异常：存在哈希断链或内容被篡改的记录，请联系管理员核查
+      </span>
+    </div>
+    <div v-else-if="!chainLoading"
+      class="bg-amber-50/70 backdrop-blur-2xl p-3 rounded-2xl border border-amber-200/80 flex items-center gap-2.5 text-xs font-bold text-amber-700">
+      <i class="fa-solid fa-triangle-exclamation text-sm shrink-0"></i>
+      <span>存证服务暂不可达，当前展示本机缓存记录，链上校验结果稍后恢复</span>
     </div>
 
     <!-- 筛选区域 -->
@@ -403,11 +446,14 @@ function getFieldsForBizType(log: AuditLog): FieldItem[] {
           <i class="fa-solid fa-file-pdf text-rose-500"></i>
           <span>导出凭证</span>
         </button>
-        <button @click="deleteSelected"
+        <button v-if="!auditLog.remoteLoaded" @click="deleteSelected"
           class="bg-white border border-red-200 text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-red-50 transition-all cursor-pointer flex items-center gap-1.5 text-red-600">
           <i class="fa-solid fa-trash-can"></i>
           <span>批量删除</span>
         </button>
+        <span v-else class="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+          <i class="fa-solid fa-lock"></i>链上存证不可删除
+        </span>
       </div>
     </div>
 
@@ -501,21 +547,32 @@ function getFieldsForBizType(log: AuditLog): FieldItem[] {
               <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">预约凭证二维码</span>
               <div class="inline-block bg-white rounded-xl p-3 border-2 border-cyan-400 shadow-md">
                 <div class="relative p-1.5 bg-white border border-slate-200 rounded-lg shadow-inner">
-                  <div class="w-28 h-28 flex flex-wrap items-center justify-center text-slate-800 opacity-90">
-                    <div class="grid grid-cols-3 gap-1.5 w-full h-full p-0.5">
-                      <div class="border-[3px] border-slate-800 aspect-square rounded-sm"></div>
-                      <div class="flex flex-col justify-between p-0.5"><span class="block bg-slate-800 h-0.5 w-full"></span><span class="block bg-slate-800 h-0.5 w-1/2"></span></div>
-                      <div class="border-[3px] border-slate-800 aspect-square rounded-sm ml-auto"></div>
-                      <div class="col-span-2 space-y-0.5"><span class="block bg-slate-800 h-0.5 w-full"></span><span class="block bg-slate-800 h-0.5 w-3/4"></span></div>
-                      <div class="bg-slate-800 aspect-square m-auto"></div>
-                      <div class="border-[3px] border-slate-800 aspect-square rounded-sm mt-auto"></div>
-                      <div class="col-span-2 flex flex-col justify-end gap-0.5 mt-auto"><span class="block bg-slate-800 h-0.5 w-full"></span><span class="block bg-slate-800 h-0.5 w-1/2"></span></div>
+                  <!-- 链上存证记录：直接取后端 ZXing 真实直通码 PNG（接口公开放行） -->
+                  <img v-if="selectedLog.voucherNum"
+                    :src="`/api/qrcode/${selectedLog.voucherNum}/image`"
+                    alt="业务直通码"
+                    class="w-28 h-28 object-contain" />
+                  <!-- 本地降级记录：保留装饰占位码 -->
+                  <template v-else>
+                    <div class="w-28 h-28 flex flex-wrap items-center justify-center text-slate-800 opacity-90">
+                      <div class="grid grid-cols-3 gap-1.5 w-full h-full p-0.5">
+                        <div class="border-[3px] border-slate-800 aspect-square rounded-sm"></div>
+                        <div class="flex flex-col justify-between p-0.5"><span class="block bg-slate-800 h-0.5 w-full"></span><span class="block bg-slate-800 h-0.5 w-1/2"></span></div>
+                        <div class="border-[3px] border-slate-800 aspect-square rounded-sm ml-auto"></div>
+                        <div class="col-span-2 space-y-0.5"><span class="block bg-slate-800 h-0.5 w-full"></span><span class="block bg-slate-800 h-0.5 w-3/4"></span></div>
+                        <div class="bg-slate-800 aspect-square m-auto"></div>
+                        <div class="border-[3px] border-slate-800 aspect-square rounded-sm mt-auto"></div>
+                        <div class="col-span-2 flex flex-col justify-end gap-0.5 mt-auto"><span class="block bg-slate-800 h-0.5 w-full"></span><span class="block bg-slate-800 h-0.5 w-1/2"></span></div>
+                      </div>
                     </div>
-                  </div>
-                  <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white text-[7px] font-black px-1 rounded shadow border border-white scale-90">直通</div>
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white text-[7px] font-black px-1 rounded shadow border border-white scale-90">直通</div>
+                  </template>
                 </div>
                 <div class="mt-1.5 text-[10px] font-mono font-bold text-slate-700">
                   <span class="text-slate-400">SN:</span> <span class="text-blue-600">{{ selectedLog.sn }}</span>
+                </div>
+                <div v-if="selectedLog.voucherNum" class="text-[9px] font-mono font-bold text-slate-400 break-all mt-0.5">
+                  直通码: <span class="text-cyan-600">{{ selectedLog.voucherNum }}</span>
                 </div>
               </div>
               <p class="text-[9px] text-slate-400 mt-1.5">到店出示此码，柜面扫码免填单快速办理</p>
@@ -566,7 +623,17 @@ function getFieldsForBizType(log: AuditLog): FieldItem[] {
                 <span class="text-blue-600 font-bold">存证凭证号</span>
                 <span class="text-slate-700 font-mono break-all">{{ selectedLog.hash }}</span>
               </div>
-              <p class="text-[9px] text-slate-500 mt-1">此记录已通过金融级加密技术存证，确保数据安全防篡改</p>
+              <div class="flex items-center justify-between mt-1.5">
+                <p class="text-[9px] text-slate-500">此记录已通过金融级加密技术存证，确保数据安全防篡改</p>
+                <span v-if="selectedLog.hashValid !== undefined"
+                  :class="['text-[8px] font-black px-1.5 py-0.5 rounded-full border shrink-0 ml-2',
+                    selectedLog.hashValid
+                      ? 'bg-emerald-100 text-emerald-600 border-emerald-200'
+                      : 'bg-rose-100 text-rose-600 border-rose-200']">
+                  <i :class="selectedLog.hashValid ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation'"
+                    class="mr-0.5"></i>{{ selectedLog.hashValid ? '哈希自洽' : '哈希异常' }}
+                </span>
+              </div>
             </div>
             <div class="flex items-center justify-end space-x-2">
               <button @click="closeDetailModal"

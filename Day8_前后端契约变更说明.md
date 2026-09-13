@@ -251,3 +251,36 @@ Java-A 提交 `d5e7eb8`：预填单页/凭证详情/进度时间轴联调完成�
 
 - 账号 `13800138000`：信用分 **70**（联调取消/删除扣分痕迹，4 条 credit_records）；`appointments` 5 条（1 虚拟号 / 3 已取消 / 1 已失效，正好演示进度页多状态）；`pre_forms` 2 条
 - 进度页演示可直接用；要恢复 90 分或清数据找 Java-A
+
+---
+
+## 九、Day 9 Java-B 回应与落地（2026-09-13，Java-B → 全员）
+
+针对第八节 @Java-B 的两个点，结论均为「修 / 接」，已完成并通过 `mvn compile`。
+
+### 回应第 1 点：V ↔ T 断裂 —— 修，V 格式不动，双格式互认
+
+- **V 号生成逻辑保持 Day3 契约不动**（`V`+13 位毫秒+4 位随机=18 位；历史 14 位同样认可），T 直通码规则也不动（T+网点4+日期8+序号4+CRC16=21 位）
+- `VoucherService.isValidVoucherNum()` 改为 **T 校验 OR V 校验**；`GET /api/vouchers/{num}`、`/validate`、`/rule` 与 `GET /api/qrcode/{num}/image` 对 T/V 同时放行，V 号不再出现 `validFormat:false` / `20007`
+- 数据通路：预约创建成功后 best-effort 在 `vouchers` 表补关联行（`appointment_id` 有值，失败仅 warn 不影响预约）；历史无行数据由查询侧回查 `appointments` 兜底
+- 查询响应新增 `kind`：`DIRECT_CODE`（T）/ `APPOINTMENT`（V），纯增量字段
+
+### 回应第 2 点：T3 全链路 —— Java-B 在 QRCodeView 内接通（选方案一）
+
+- PreFormView 仍是 Java-A 红线（只保存预填单+列表），仅在保存成功后把上下文 `{preFormId,businessType,bizTypeName,materials}` 写入 `sessionStorage`（key：`lingmou_pending_qrcode`，消费一次即删，身份证号不进 URL）再跳 `/qrcode`
+- QRCodeView onMounted 消费上下文调 `POST /api/qrcode/generate`：通过 → 展示后端真实 ZXing 码图（`<img src="/api/qrcode/{num}/image">`，公开放行）+ 30 分钟倒计时 + PNG 下载；不通过 → 弹缺失材料弹窗（重新预检/返回补充材料）
+- **重要契约**：预检不通过是正常业务分支，后端返回 **HTTP 200 / `code=0` / `data.passed=false`**（含 `missing`、`missingLabels` 中文标签、`required`），不抛 60003；只有未知业务才走 `60004` 错误码（否则前端 axios 拦截器会 alert 且拿不到 data）
+- Java 侧新增适配层 `PrecheckBizSupport`：前端 5 枚举 ↔ Python 枚举/材料字段归一化（如 corp_transfer 的 recvName/recvCard → payeeName/payeeAccount）；Python 侧仅在 `BUSINESS_MATERIALS` 追加 5 枚举配置，precheck 请求/响应契约不变
+
+### 新增：客户侧区块链存证接口（区块链审计页 HistoryView）
+
+- `GET /api/audit/my`：任意登录用户，按 `operator_id` 强制隔离，data **直接为数组**，字段对齐前端 AuditLog（含脱敏 PII、真实 hash、`voucherNum`、逐条 `hashValid`）
+- `GET /api/audit/my/verify`：返回 `{intact}`，逐条 SHA-256 自洽校验
+- 管理员端路径不变：`GET /api/audit/logs`、`GET /api/audit/logs/verify`（仍限 AUDITOR/RISK/ADMIN）
+- 直通码签发成功后 best-effort 写一条 `action=VOUCHER_GENERATE` 审计记录；前端拉取失败静默回退本地 localStorage 数据，链上记录不可本地删除（批量删除按钮自动隐藏）
+
+### 验证状态
+
+- 后端 `mvn -q compile` 通过（修复了凭证号变量作用域、Map 泛型两处编译错误）
+- Python `settings.py` 语法校验通过
+- 前端 vue-tsc 本机未执行：环境仅 Node v18.16.1（项目要求 ≥22）且 `node_modules` 未安装；已逐文件人工复核字段契约，待 Node 22 环境补跑 `npm run build`

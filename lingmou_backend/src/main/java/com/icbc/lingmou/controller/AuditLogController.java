@@ -5,6 +5,7 @@ import com.icbc.lingmou.common.PageResult;
 import com.icbc.lingmou.common.Result;
 import com.icbc.lingmou.common.ResultCode;
 import com.icbc.lingmou.dto.response.AuditLogResponse;
+import com.icbc.lingmou.dto.response.CustomerAuditLogResponse;
 import com.icbc.lingmou.service.AuditLogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -24,7 +25,7 @@ import java.util.Map;
  */
 @Tag(name = "审计日志", description = "区块链式操作日志查询（仅 AUDITOR/RISK/ADMIN 可访问）")
 @RestController
-@RequestMapping("/api/audit/logs")
+@RequestMapping("/api/audit")
 @RequiredArgsConstructor
 public class AuditLogController {
 
@@ -44,7 +45,7 @@ public class AuditLogController {
 
     @Operation(summary = "查询审计日志（分页 + Hash校验）",
             description = "返回每条记录时自动校验 hash 是否自洽（hashValid 字段）。仅 AUDITOR / RISK / ADMIN 角色可访问")
-    @GetMapping
+    @GetMapping("/logs")
     public Result<PageResult<AuditLogResponse>> getLogs(
             @Parameter(description = "操作类型筛选（可选），如 APPOINTMENT_CREATE / VOUCHER_GENERATE")
             @RequestParam(required = false) String action,
@@ -60,10 +61,33 @@ public class AuditLogController {
 
     @Operation(summary = "校验整条Hash链完整性",
             description = "遍历所有记录验证 prevHash→hash 链是否闭合，未闭合返回 details 含断裂位置")
-    @GetMapping("/verify")
+    @GetMapping("/logs/verify")
     public Result<Map<String, Object>> verifyChain(HttpServletRequest httpRequest) {
         assertRoleAllowed(httpRequest);
         boolean intact = auditLogService.verifyChain();
+        return Result.success(Map.of("intact", intact));
+    }
+
+    // ======================================================================
+    // 客户侧接口（任意登录用户，按 operator_id 强制隔离，只返回本人存证）
+    // 路径 /api/audit/my 与审计员接口 /api/audit/logs 互不冲突
+    // ======================================================================
+
+    @Operation(summary = "我的存证记录（区块链审计页）",
+            description = "返回当前用户的业务直通码存证记录（data 直接为数组），含真实 hash 与脱敏 PII")
+    @GetMapping("/my")
+    public Result<List<CustomerAuditLogResponse>> getMyLogs(HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        List<CustomerAuditLogResponse> logs = auditLogService.getMyLogs(userId);
+        return Result.success(logs);
+    }
+
+    @Operation(summary = "校验我的存证Hash链",
+            description = "逐条校验当前用户存证记录的 SHA-256 hash 是否自洽")
+    @GetMapping("/my/verify")
+    public Result<Map<String, Object>> verifyMyChain(HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        boolean intact = auditLogService.verifyMyChain(userId);
         return Result.success(Map.of("intact", intact));
     }
 }

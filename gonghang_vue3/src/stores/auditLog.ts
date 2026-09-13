@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import request from '@/utils/request'
 
 export type AuditStatus = '已提交' | '已完成' | '已取消'
 
@@ -22,6 +23,8 @@ export interface AuditExtraData {
   address?: string
   payerName?: string
   payerAccount?: string
+  payeeName?: string
+  payeeAccount?: string
   recvName?: string
   recvCard?: string
   recvBank?: string
@@ -35,7 +38,7 @@ export interface AuditExtraData {
 export interface AuditLog {
   id: number
   sn: string                // 流水号
-  bizType: BizType
+  bizType: BizType | string
   bizTypeName: string
   userName: string
   idCardMasked: string      // 身份证号脱敏显示
@@ -44,6 +47,10 @@ export interface AuditLog {
   timestamp: string         // 创建时间（本地字符串）
   hash: string              // 存证凭证哈希
   status: AuditStatus
+  /** 业务直通码凭证号（后端存证记录才有，可据此取真实二维码图） */
+  voucherNum?: string
+  /** 后端 hash 自洽校验结果（后端存证记录才有） */
+  hashValid?: boolean
 }
 
 export type BizType = 'cash_reserve' | 'open_card' | 'corp_transfer' | 'cash_deposit' | 'fx_exchange'
@@ -64,6 +71,8 @@ export const useAuditLogStore = defineStore('auditLog', () => {
     localStorage.setItem('icbc_audit_logs_version', AUDIT_LOG_VERSION)
   }
   const auditLogs = ref<AuditLog[]>(JSON.parse(localStorage.getItem('icbc_audit_logs') || '[]'))
+  /** 是否已成功加载过后端链上存证：为 true 时列表即后端数据（不可本地删除） */
+  const remoteLoaded = ref(false)
 
   const completedCount = computed(() =>
     auditLogs.value.filter(l => l.status === '已完成').length
@@ -74,6 +83,37 @@ export const useAuditLogStore = defineStore('auditLog', () => {
 
   function saveToStorage() {
     localStorage.setItem('icbc_audit_logs', JSON.stringify(auditLogs.value))
+  }
+
+  /**
+   * 拉取后端区块链存证（GET /api/audit/my，data 直接为数组）。
+   * 成功：以后端记录替换本地列表（含真实 hash / 凭证号 / 脱敏 PII）；
+   * 失败：静默回退本地 localStorage 数据（与热力图/数字人同一降级策略）。
+   * @returns 是否成功使用后端数据
+   */
+  async function fetchRemote(): Promise<boolean> {
+    try {
+      const data = (await request.get('/api/audit/my')) as AuditLog[]
+      if (Array.isArray(data)) {
+        auditLogs.value = data
+        remoteLoaded.value = true
+        return true
+      }
+      return false
+    } catch {
+      remoteLoaded.value = false
+      return false
+    }
+  }
+
+  /** 校验本人名下存证 hash 是否逐条自洽（GET /api/audit/my/verify） */
+  async function verifyChainRemote(): Promise<boolean | null> {
+    try {
+      const data = (await request.get('/api/audit/my/verify')) as { intact: boolean }
+      return !!data?.intact
+    } catch {
+      return null
+    }
   }
 
   /** 添加一条预填单记录（由 PreFormView 调用） */
@@ -258,8 +298,11 @@ export const useAuditLogStore = defineStore('auditLog', () => {
 
   return {
     auditLogs,
+    remoteLoaded,
     completedCount,
     pendingCount,
+    fetchRemote,
+    verifyChainRemote,
     add,
     cancel,
     complete,

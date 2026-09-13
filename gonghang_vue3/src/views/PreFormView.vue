@@ -419,7 +419,7 @@ async function proceedGenerateQR() {
     return
   }
 
-  // 保存预填单记录到审计日志，供历史预约查询页面展示
+  // 保存预填单记录到审计日志（后端不可达时的本地降级数据；链路上链以直通码签发为准）
   auditLog.add({
     bizType: bizType as 'cash_reserve' | 'open_card' | 'corp_transfer' | 'cash_deposit' | 'fx_exchange',
     bizTypeName: bizTypeNameMap[bizType] || '其他业务',
@@ -430,6 +430,18 @@ async function proceedGenerateQR() {
     timestamp: new Date().toLocaleString('zh-CN'),
     status: '已提交',
   })
+
+  // T3 交接：把待签发上下文交给 QRCodeView，由其调 POST /api/qrcode/generate
+  // （AI 预检 + T 凭证 + 审计上链）。sessionStorage 而非 query 参数，避免身份证号进 URL。
+  sessionStorage.setItem('lingmou_pending_qrcode', JSON.stringify({
+    preFormId: created?.id,
+    businessType: bizType,
+    bizTypeName: bizTypeNameMap[bizType] || '其他业务',
+    materials: {
+      ...baseInfo.value,
+      ...(extraDataMap[bizType] as object || {}),
+    },
+  }))
 
   // 跳转到业务直通码页面
   router.push('/qrcode')

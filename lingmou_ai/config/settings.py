@@ -28,6 +28,8 @@ HOURLY_BASELINE = [
 
 # 6 类业务所需材料清单（Day 4）
 # key = businessType，value = 必填字段名列表
+# Day 9 T3 联调：追加前端冻结的 5 个业务枚举（预填单/直通码链路在用），
+# 仅目录增量，/api/ai/precheck 请求/响应契约不变；字段名由 Java 侧归一化后传入。
 BUSINESS_MATERIALS = {
     "OPEN_ACCOUNT":     ["idCard", "phone", "address"],
     "CARD_LOSS":         ["idCard", "cardNumber"],
@@ -35,6 +37,12 @@ BUSINESS_MATERIALS = {
     "DEPOSIT":           ["amount", "depositMethod"],
     "LOAN_APPLICATION":  ["idCard", "incomeProof", "employer", "amount", "loanTerm"],
     "WEALTH_MGMT":       ["idCard", "riskAssessment", "investAmount"],
+    # —— Day9 新增：前端 5 业务枚举（大额取现/办卡/对公转账/现金缴款/外币兑换） ——
+    "CASH_RESERVE":     ["idCard", "amount", "date"],
+    "OPEN_CARD":        ["idCard", "phone", "address"],
+    "CORP_TRANSFER":    ["idCard", "payerName", "payerAccount", "payeeName", "payeeAccount", "amount"],
+    "CASH_DEPOSIT":     ["payerName", "payerAccount", "amount", "depositMethod"],
+    "FX_EXCHANGE":      ["idCard", "fxCurrency", "fxDirection", "fxAmount"],
 }
 
 # 业务类型关键词映射（Day 5 预填单兜底解析）

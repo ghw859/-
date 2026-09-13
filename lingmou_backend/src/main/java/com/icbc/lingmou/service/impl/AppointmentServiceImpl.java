@@ -17,6 +17,7 @@ import com.icbc.lingmou.mapper.BranchMapper;
 import com.icbc.lingmou.mapper.UserMapper;
 import com.icbc.lingmou.service.AppointmentService;
 import com.icbc.lingmou.service.CreditService;
+import com.icbc.lingmou.service.VoucherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final BranchMapper branchMapper;
     private final UserMapper userMapper;
     private final CreditService creditService;
+    private final VoucherService voucherService;
 
     private static final int MAX_PER_SLOT = 10; // 每时段最多10人
     private static final int CREDIT_LIMIT = 60; // 信用分低于60限制预约
@@ -90,6 +92,8 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         Appointment appointment = new Appointment();
+        // 凭证号在锁内生成、锁外落 vouchers 关联行时还要使用，提前声明
+        String voucherNum;
 
         // 2~4. 冲突校验 / 余量校验 / 排队号生成 / 落库，必须在同一把锁内串行完成
         synchronized (bookingLock(request.getBranchId(), request.getAppointmentDate())) {
@@ -121,10 +125,20 @@ public class AppointmentServiceImpl implements AppointmentService {
             appointment.setQueueNumber(queueNumber);
 
             // 生成凭证号
-            String voucherNum = generateVoucherNum();
+            voucherNum = generateVoucherNum();
             appointment.setVoucherNum(voucherNum);
 
             appointmentMapper.insert(appointment);
+        }
+
+        // 5. 预约落库成功后，在 vouchers 表补一行 V 凭证关联行（appointment_id 通路）。
+        //    刻意放在分段锁外、best-effort 执行：关联行失败不允许拖垮预约主流程，
+        //    查询侧（VoucherController / 二维码图片）对缺失行还有 appointments 回查兜底。
+        try {
+            voucherService.saveAppointmentVoucher(appointment.getId(), voucherNum);
+        } catch (Exception e) {
+            log.warn("[预约] V凭证关联行落库失败，不影响预约: appointmentId={}, voucherNum={}, err={}",
+                    appointment.getId(), voucherNum, e.getMessage());
         }
 
         return toResponse(appointment, branch.getName());
@@ -297,7 +311,10 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     /**
-     * 生成凭证号（保持 V+数字 格式，与 API_DAY3 契约示例一致）
+     * 生成预约凭证号（V+数字 格式，与 API_DAY3 契约示例一致）。
+     *
+     * V 号与直通码 T 号在 VoucherService 双格式互认：预约创建后该号会同步落
+     * vouchers 关联行，GET /api/vouchers/{V号} 与 /api/qrcode/{V号}/image 均可消费。
      *
      * 只取 System.currentTimeMillis() 时，同毫秒内的两个请求会生成同一个凭证号，
      * 撞上 vouchers.voucher_num 的 UNIQUE 约束后整个预约直接失败，这里追加随机数避开。

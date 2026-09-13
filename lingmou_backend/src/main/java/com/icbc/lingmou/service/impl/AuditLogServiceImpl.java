@@ -3,19 +3,22 @@ package com.icbc.lingmou.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.icbc.lingmou.common.PageResult;
 import com.icbc.lingmou.dto.response.AuditLogResponse;
+import com.icbc.lingmou.dto.response.CustomerAuditLogResponse;
 import com.icbc.lingmou.entity.AuditLog;
 import com.icbc.lingmou.mapper.AuditLogMapper;
 import com.icbc.lingmou.service.AuditLogService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.List;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 /**
  * 审计日志Service实现（区块链式Hash链）
@@ -25,12 +28,17 @@ import java.util.List;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class AuditLogServiceImpl implements AuditLogService {
 
     private final AuditLogMapper auditLogMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String GENESIS_HASH = "0".repeat(64);
+    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    public AuditLogServiceImpl(AuditLogMapper auditLogMapper) {
+        this.auditLogMapper = auditLogMapper;
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -91,6 +99,101 @@ public class AuditLogServiceImpl implements AuditLogService {
             }
         }
         return true;
+    }
+
+    @Override
+    public List<CustomerAuditLogResponse> getMyLogs(Long userId) {
+        // 强制用户隔离：只取本人名下的直通码存证
+        List<AuditLog> logs = auditLogMapper.selectList(
+                new LambdaQueryWrapper<AuditLog>()
+                        .eq(AuditLog::getOperatorId, userId)
+                        .eq(AuditLog::getAction, ACTION_VOUCHER_GENERATE)
+                        .orderByDesc(AuditLog::getId));
+
+        List<CustomerAuditLogResponse> result = new ArrayList<>(logs.size());
+        for (AuditLog logEntry : logs) {
+            result.add(toCustomerResponse(logEntry));
+        }
+        return result;
+    }
+
+    @Override
+    public boolean verifyMyChain(Long userId) {
+        List<AuditLog> logs = auditLogMapper.selectList(
+                new LambdaQueryWrapper<AuditLog>()
+                        .eq(AuditLog::getOperatorId, userId)
+                        .eq(AuditLog::getAction, ACTION_VOUCHER_GENERATE)
+                        .orderByAsc(AuditLog::getId));
+        for (AuditLog logEntry : logs) {
+            if (!validateHash(logEntry)) {
+                log.warn("[审计链] 个人存证校验失败 userId={} id={}", userId, logEntry.getId());
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 审计实体 → 客户存证 DTO：反解 content JSON、PII 脱敏、字段对齐前端 AuditLog 结构
+     */
+    private CustomerAuditLogResponse toCustomerResponse(AuditLog auditLog) {
+        Map<String, Object> content = parseContent(auditLog.getContent());
+        boolean hashValid = validateHash(auditLog);
+
+        Map<String, Object> extraData;
+        Object ed = content.get("extraData");
+        if (ed instanceof Map<?, ?> map) {
+            extraData = objectMapper.convertValue(map, new TypeReference<Map<String, Object>>() {});
+        } else {
+            extraData = new LinkedHashMap<>();
+        }
+
+        String idCard = Objects.toString(content.get("idCard"), "");
+        String phone = Objects.toString(content.get("phone"), "");
+
+        return CustomerAuditLogResponse.builder()
+                .id(auditLog.getId())
+                .sn(Objects.toString(content.get("sn"), ""))
+                .bizType(Objects.toString(content.get("businessType"), ""))
+                .bizTypeName(Objects.toString(content.get("bizTypeName"), "其他业务"))
+                .userName(Objects.toString(content.get("userName"), ""))
+                .idCardMasked(maskIdCard(idCard))
+                .phoneMasked(maskPhone(phone))
+                .extraData(extraData)
+                .timestamp(auditLog.getCreatedAt() != null ? auditLog.getCreatedAt().format(TIME_FMT) : "")
+                .hash(auditLog.getHash())
+                .status(Objects.toString(content.getOrDefault("status", "已提交"), "已提交"))
+                .voucherNum(Objects.toString(content.get("voucherNum"), ""))
+                .hashValid(hashValid)
+                .build();
+    }
+
+    private Map<String, Object> parseContent(String content) {
+        if (content == null || content.isBlank()) {
+            return Collections.emptyMap();
+        }
+        try {
+            return objectMapper.readValue(content, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            log.warn("[审计] content JSON 反解失败 id={}: {}", content, e.getMessage());
+            return Collections.emptyMap();
+        }
+    }
+
+    /** 身份证脱敏：前4 + ******** + 后4；过短原样返回 */
+    private static String maskIdCard(String idCard) {
+        if (idCard == null || idCard.length() < 8) {
+            return idCard == null ? "" : idCard;
+        }
+        return idCard.substring(0, 4) + "********" + idCard.substring(idCard.length() - 4);
+    }
+
+    /** 手机号脱敏：前3 + **** + 后4；过短原样返回 */
+    private static String maskPhone(String phone) {
+        if (phone == null || phone.length() < 7) {
+            return phone == null ? "" : phone;
+        }
+        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
     }
 
     /**
