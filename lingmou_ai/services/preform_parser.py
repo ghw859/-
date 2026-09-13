@@ -116,7 +116,9 @@ def _extract_amount(text: str) -> Optional[int]:
             continue
 
     # 中文数字：抓金额关键词附近
-    for kw in ["存入", "存款", "存钱", "存", "金额", "转账", "汇款", "投资", "贷款", "借款"]:
+    # 取现/提现类必须在内：cash_reserve 是前端 5 枚举之一，"我要取现五万元"曾因此解析不出金额
+    for kw in ["存入", "存款", "存钱", "存", "金额", "转账", "汇款", "投资", "贷款", "借款",
+               "取现", "取钱", "提现", "支取"]:
         idx = text.find(kw)
         if idx >= 0:
             tail = text[idx + len(kw): idx + len(kw) + 12]
@@ -125,6 +127,12 @@ def _extract_amount(text: str) -> Optional[int]:
                 cn_str = cm.group(1)
                 # 剥掉货币单位后缀（"五万元"→"五万"），否则 cn2num 校验失败
                 cn_str = cn_str.rstrip("元块整")
+                # 正则贪婪匹配最长 7 个汉字，金额后紧跟别的词时整串会校验失败
+                # （"转账五万元到张三"→group 是"五万元到张三"），截到首个非数字字符为止
+                for i, ch in enumerate(cn_str):
+                    if ch not in _CN_NUM and ch not in _CN_UNIT:
+                        cn_str = cn_str[:i]
+                        break
                 # 必须含至少一个中文数字字符
                 if cn_str and any(c in _CN_NUM or c in _CN_UNIT for c in cn_str):
                     n = cn2num(cn_str)
