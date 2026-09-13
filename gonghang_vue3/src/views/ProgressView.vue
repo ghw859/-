@@ -136,7 +136,24 @@ function selectAppt(voucherNum: string) {
 }
 
 // 切换批量选中
+// 终态预约后端拒绝删除（已取消 20006 / 已过期 20004 / 已完成），不参与批量删除
+function isTerminalStatus(status: string) {
+  return status === 'canceled' || status === 'expired' || status === 'completed'
+}
+
+// 选中集合里的预约可能因刷新滑入终态（如刚取消），批量删除必然部分失败，这里剔掉
+function pruneTerminalSelections() {
+  const terminals = new Set(
+    appt.appointments.filter(a => isTerminalStatus(a.status)).map(a => a.voucherNum)
+  )
+  if ([...selectedApptSet.value].some(v => terminals.has(v))) {
+    selectedApptSet.value = new Set([...selectedApptSet.value].filter(v => !terminals.has(v)))
+  }
+}
+
 function toggleApptSelect(voucherNum: string) {
+  const target = appt.appointments.find(a => a.voucherNum === voucherNum)
+  if (!target || isTerminalStatus(target.status)) return
   if (selectedApptSet.value.has(voucherNum)) {
     selectedApptSet.value.delete(voucherNum)
   } else {
@@ -176,6 +193,7 @@ async function refreshAll() {
   refreshing.value = true
   try {
     await appt.fetchMy()
+    pruneTerminalSelections()
   } catch (e: any) {
     showToast(e?.message || '刷新失败')
   } finally {
@@ -215,6 +233,7 @@ async function refreshVoucher() {
   voucherRefreshing.value = true
   try {
     await appt.refreshOne(currentAppt.value.id)
+    pruneTerminalSelections()
   } catch (e: any) {
     showToast(e?.message || '刷新凭证失败')
   } finally {
@@ -261,6 +280,7 @@ onMounted(() => {
   if (appt.appointments.length > 0 && !selectedVoucher.value) {
     selectedVoucher.value = appt.appointments[0]!.voucherNum
   }
+  pruneTerminalSelections()
 })
 </script>
 
@@ -306,7 +326,7 @@ onMounted(() => {
               ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50'
               : 'border-slate-200 bg-white hover:border-indigo-300'
           ]">
-          <input type="checkbox" :checked="selectedApptSet.has(a.voucherNum)"
+          <input v-if="!isTerminalStatus(a.status)" type="checkbox" :checked="selectedApptSet.has(a.voucherNum)"
             @click.stop="toggleApptSelect(a.voucherNum)"
             class="absolute top-2 right-2 w-3.5 h-3.5 rounded border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer">
           <div class="flex items-center justify-between mb-1 pr-5">
