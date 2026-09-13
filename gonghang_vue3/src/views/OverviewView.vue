@@ -10,6 +10,11 @@ const auth = useAuthStore()
 // 真实数据：已办结预约数（后端 /api/appointments/my）
 const completedCount = computed(() => appt.appointments.filter(a => a.status === 'completed').length)
 
+// Day9：AI 预填单数改调后端真实统计 GET /api/overview 的 totalPreForms
+// （原硬编码 '9' 降级为后端不可用时的兜底值，与热力图/诊断的失败回退策略一致）
+const PRE_FORM_FALLBACK = '9'
+const preFormCount = ref(PRE_FORM_FALLBACK)
+
 // 4 个核心指标卡片（完全复刻原文案+图标+颜色）
 const stats = computed(() => [
   {
@@ -38,7 +43,7 @@ const stats = computed(() => [
   },
   {
     label: 'AI 预填单自动解析',
-    value: '9',
+    value: preFormCount.value,
     prefix: '',
     suffix: '份',
     icon: 'fa-solid fa-wand-magic-sparkles',
@@ -222,9 +227,23 @@ async function loadDiagnosis() {
   }
 }
 
+// Day9：AI 预填单自动解析卡片改调后端真实统计 GET /api/overview
+// 只取 totalPreForms 一个字段；失败/结构异常时保留兜底值，不打扰页面
+async function loadOverviewCards() {
+  try {
+    const data = await request.get<{ totalPreForms?: number }>('/api/overview')
+    if (data && typeof data.totalPreForms === 'number') {
+      preFormCount.value = String(data.totalPreForms)
+    }
+  } catch {
+    // 保留兜底值，与热力图/诊断的失败回退策略一致
+  }
+}
+
 onMounted(() => {
   loadHeatmap()
   loadDiagnosis()
+  loadOverviewCards()
 })
 
 onUnmounted(() => {
