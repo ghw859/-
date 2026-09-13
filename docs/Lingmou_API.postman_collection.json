@@ -1,0 +1,405 @@
+{
+  "info": {
+    "name": "ICBC 灵枢 · 后端 API 全集（Day9）",
+    "description": "灵枢智慧银行服务平台接口集合。\n\n## 使用步骤\n1. 修改集合变量 `baseUrl`（后端 8080）与 `aiBaseUrl`（AI 服务 8000）\n2. 先执行【01 用户认证 → 登录】，测试脚本会自动把 token 写入集合变量\n3. 其余请求自动携带 Bearer {{token}}\n\n## 统一返回格式\n`{\"code\": 0, \"msg\": \"success\", \"data\": {...}}`，code=0 成功；错误码段位见 README。\n\n## 免登录接口\n网点列表/详情/推荐、凭证校验/规则、直通码图片、AI 服务全部接口。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "aiBaseUrl", "value": "http://localhost:8000" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01 用户认证 /api/auth",
+      "item": [
+        {
+          "name": "登录（自动保存 token）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.code === 200);",
+                  "const body = pm.response.json();",
+                  "if (body.code === 0 && body.data && (body.data.token || body.data.accessToken)) {",
+                  "  pm.collectionVariables.set('token', body.data.token || body.data.accessToken);",
+                  "  console.log('token 已保存到集合变量');",
+                  "} else {",
+                  "  console.log('登录未成功：', JSON.stringify(body));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo01\",\n  \"password\": \"123456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "返回 data.token（JWT），集合测试脚本自动存入 {{token}}。"
+          }
+        },
+        {
+          "name": "注册",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo02\",\n  \"password\": \"123456\",\n  \"realName\": \"张三\",\n  \"phone\": \"13800138000\",\n  \"idCard\": \"110101199001011234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "username/password/realName/phone 必填，idCard 可选。"
+          }
+        },
+        {
+          "name": "登出",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout",
+            "description": "使当前 Bearer token 失效。"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 预约管理 /api/appointments",
+      "item": [
+        {
+          "name": "创建预约",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/appointments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": 1,\n  \"businessType\": \"CASH_RESERVE\",\n  \"appointmentDate\": \"2026-09-20\",\n  \"timeSlot\": \"09:00-10:00\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "返回 data.id / data.voucherNum（V 凭证）/ data.queueNumber 等。\nDay9 #4：创建成功后可用返回的 id 调【05 业务直通码 → 绑定预约】回填直通码的 appointment_id。"
+          }
+        },
+        {
+          "name": "我的预约",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/appointments/my?simple=false",
+            "description": "simple=true 返回简化版状态概览。"
+          }
+        },
+        {
+          "name": "预约详情",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/appointments/1" }
+        },
+        {
+          "name": "取消预约",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/appointments/1" }
+        },
+        {
+          "name": "查询进度",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/appointments/1/progress" }
+        },
+        {
+          "name": "推进进度",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/appointments/1/progress",
+            "description": "手动按钮推进办理进度（仅能推进到下一步），无请求体。"
+          }
+        },
+        {
+          "name": "历史预约（分页多条件）",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/appointments/history?pageNum=1&pageSize=10",
+            "description": "可选参数：branchId、businessType、status、startDate、endDate、simple。"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 预填单 /api/preforms",
+      "item": [
+        {
+          "name": "创建预填单",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/preforms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessType\": \"corp_transfer\",\n  \"rawText\": \"向北京灵枢科技有限公司转账5万元，收款账号6222020200112233445\",\n  \"parsedJson\": \"{}\",\n  \"imageUrls\": \"\",\n  \"signatureUrl\": \"\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "businessType 使用前端小写枚举：cash_reserve / open_card / corp_transfer / cash_deposit / fx_exchange。返回 data.id 供直通码 generate 的 preFormId 使用。"
+          }
+        },
+        {
+          "name": "我的预填单",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/preforms/my" }
+        },
+        {
+          "name": "预填单详情",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/preforms/1" }
+        },
+        {
+          "name": "更新预填单",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/preforms/1",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessType\": \"corp_transfer\",\n  \"rawText\": \"更新后的文本\",\n  \"parsedJson\": \"{}\",\n  \"imageUrls\": \"\",\n  \"signatureUrl\": \"\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "删除预填单",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/preforms/1" }
+        }
+      ]
+    },
+    {
+      "name": "04 网点 /api/branches（公开）",
+      "item": [
+        {
+          "name": "网点列表",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/branches" }
+        },
+        {
+          "name": "网点详情",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/branches/b1" }
+        },
+        {
+          "name": "AI 推荐网点",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/branches/recommend?businessType=CASH_RESERVE",
+            "description": "免登录。返回 id 为字符串（b1-b6），status 小写 free/moderate/busy。"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 业务直通码 /api/qrcode",
+      "item": [
+        {
+          "name": "生成直通码（AI预检 + T码 + 审计链）",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/qrcode/generate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessType\": \"corp_transfer\",\n  \"materials\": {\n    \"userName\": \"张三\",\n    \"idCard\": \"110101199001011234\",\n    \"phone\": \"13800138000\",\n    \"payerName\": \"北京灵枢科技有限公司\",\n    \"payerAccount\": \"6222020200112233445\",\n    \"payeeName\": \"李四\",\n    \"payeeAccount\": \"6222020200112233446\",\n    \"amount\": \"50000\"\n  },\n  \"preFormId\": 1,\n  \"appointmentId\": null,\n  \"branchId\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": " Day9 T3 主链路。\n- 预检不通过：HTTP 200 / code=0 / passed=false + data.missingLabels（中文缺失材料列表），不算错误；\n- 预检通过：签发 T 码（21位，CRC16 校验），写 vouchers 表与 audit_logs 哈希链；\n- 返回 voucherNum / sn / qrcodeImageUrl / auditSynced；appointmentId 此时通常为 null（前端流程是先直通码后预约），预约创建后调【绑定预约】回填。"
+          }
+        },
+        {
+          "name": "直通码二维码图片（公开）",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/qrcode/TBK002026091300013C2C/image?size=300",
+            "description": "免登录，返回 PNG（ ZXing 生成）。T/V 凭证号均支持；V 号在 vouchers 表缺行时回查预约，不再抛 20007。可直接 <img src> 引用。"
+          }
+        },
+        {
+          "name": "绑定预约（Day9 #4 新增）",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/qrcode/TBK002026091300013C2C/bindAppointment?appointmentId=1",
+            "description": "预约创建成功后调用：从前端 sessionStorage 的 lingmou_last_qrcode 取 voucherNum，appointmentId 用创建预约返回的 id。\n- T 码已有行 → 更新 appointment_id；\n- V 号不在 vouchers 表 → 幂等补落关联行；\n- T 码不存在 → 20007；预约不属于当前用户 → 10003。"
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 凭证查询 /api/vouchers",
+      "item": [
+        {
+          "name": "凭证详情（T/V 互认）",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/vouchers/TBK002026091300013C2C",
+            "description": "Day9 双格式互认：T 直通码走 CRC 校验，V 预约凭证走格式校验；返回 data.kind = DIRECT_CODE / APPOINTMENT。"
+          }
+        },
+        {
+          "name": "凭证校验（公开）",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/vouchers/TBK002026091300013C2C/validate"
+          }
+        },
+        {
+          "name": "凭证号规则说明（公开）",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/vouchers/rule" }
+        }
+      ]
+    },
+    {
+      "name": "07 区块链审计 /api/audit",
+      "item": [
+        {
+          "name": "我的存证记录",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/audit/my",
+            "description": "任意登录用户。data 直接为数组，字段含 id/sn/bizType/bizTypeName/userName/idCardMasked/phoneMasked/extraData/timestamp/hash/status/voucherNum/hashValid；PII 已脱敏。"
+          }
+        },
+        {
+          "name": "我的存证链校验",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/audit/my/verify",
+            "description": "返回 { intact: true/false }。"
+          }
+        },
+        {
+          "name": "审计员-日志分页（AUDITOR/RISK/ADMIN）",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/audit/logs?action=VOUCHER_GENERATE&pageNum=1&pageSize=20"
+          }
+        },
+        {
+          "name": "审计员-全链校验（AUDITOR/RISK/ADMIN）",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/audit/logs/verify"
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 数据总览 /api/overview",
+      "item": [
+        { "name": "总览卡片", "request": { "method": "GET", "url": "{{baseUrl}}/api/overview" } },
+        { "name": "资产走势", "request": { "method": "GET", "url": "{{baseUrl}}/api/overview/assets-chart" } },
+        { "name": "信用分趋势", "request": { "method": "GET", "url": "{{baseUrl}}/api/overview/credit-trend" } },
+        { "name": "业务分布饼图", "request": { "method": "GET", "url": "{{baseUrl}}/api/overview/business-pie" } }
+      ]
+    },
+    {
+      "name": "09 文件上传 /api/files",
+      "item": [
+        {
+          "name": "单文件上传",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/files/upload",
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            }
+          }
+        },
+        {
+          "name": "批量上传",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/files/upload/batch",
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "files", "type": "file", "src": [] }]
+            }
+          }
+        },
+        {
+          "name": "删除文件",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/files/delete?fileName=xxx.png"
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 信用分 /api/credit",
+      "item": [
+        {
+          "name": "查询我的信用分",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/credit" }
+        },
+        {
+          "name": "调整信用分（AUDITOR/RISK/ADMIN）",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/credit/adjust?targetUserId=2&amount=5&reason=活动奖励"
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 健康检查 /api/test",
+      "item": [
+        {
+          "name": "服务探活",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/test" }
+        }
+      ]
+    },
+    {
+      "name": "12 AI 服务 :8000（公开）",
+      "item": [
+        {
+          "name": "AI 健康检查",
+          "request": { "method": "GET", "url": "{{aiBaseUrl}}/api/ai/health" }
+        },
+        {
+          "name": "材料预检",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{aiBaseUrl}}/api/ai/precheck",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessType\": \"CORP_TRANSFER\",\n  \"materials\": {\n    \"idCard\": \"110101199001011234\",\n    \"payerName\": \"北京灵枢科技有限公司\",\n    \"payerAccount\": \"6222020200112233445\",\n    \"payeeName\": \"李四\",\n    \"payeeAccount\": \"6222020200112233446\",\n    \"amount\": \"50000\"\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "纯规则校验（不调大模型）。businessType 大写枚举：CASH_RESERVE / OPEN_CARD / CORP_TRANSFER / CASH_DEPOSIT / FX_EXCHANGE（另兼容 OPEN_ACCOUNT 等 Day4 枚举与 TRANSFER/LOAN 别名）。未知业务 code=60004。"
+          }
+        },
+        {
+          "name": "数字人对话（规则版）",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{aiBaseUrl}}/api/ai/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"postman-1\",\n  \"message\": \"我想办理大额转账\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "说明：WS / heatmap / parse-preform / diagnosis",
+          "request": {
+            "method": "GET",
+            "url": "{{aiBaseUrl}}/api/ai/diagnosis",
+            "description": "其余 AI 接口：WS /api/ai/chat/ws；GET /api/ai/heatmap；POST /api/ai/parse-preform；GET /api/ai/diagnosis。契约见 docs/API_DAY*.md 与 Swagger。"
+          }
+        }
+      ]
+    }
+  ]
+}

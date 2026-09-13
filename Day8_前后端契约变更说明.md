@@ -284,3 +284,29 @@ Java-A 提交 `d5e7eb8`：预填单页/凭证详情/进度时间轴联调完成�
 - 后端 `mvn -q compile` 通过（修复了凭证号变量作用域、Map 泛型两处编译错误）
 - Python `settings.py` 语法校验通过
 - 前端 vue-tsc 本机未执行：环境仅 Node v18.16.1（项目要求 ≥22）且 `node_modules` 未安装；已逐文件人工复核字段契约，待 Node 22 环境补跑 `npm run build`
+
+---
+
+## 十、Day 9 #4 直通码↔预约绑定（2026-09-13，Java-B → Java-A）
+
+问题：前端流程是"预填单 → 直通码页（调 generate）→ 去预约"，generate 被调用时预约尚不存在，`appointmentId` 传不进去，vouchers 表 `appointment_id` 一直是 null。
+
+### 后端（已完成，`mvn compile` 通过）
+
+1. **`POST /api/qrcode/generate` 确认**：`appointmentId` 为 null 时正常签发 T 码不报错（原本就支持），响应中带回 `appointmentId: null`
+2. **新增绑定接口**：`PUT /api/qrcode/{voucherNum}/bindAppointment?appointmentId={预约id}`
+   - T 直通码已有行 → 直接更新 `vouchers.appointment_id`
+   - V 号不在 vouchers 表（历史数据）→ 调 `saveAppointmentVoucher` 幂等补落关联行
+   - T 码不存在 → `20007`；凭证号格式不合法 → `20007`；预约不存在 → `20003`；预约不属于当前登录用户 → `10003`
+   - 返回：`{"code":0,"msg":"关联成功","data":{"voucherNum":"TBK...","appointmentId":1,"bound":true}}`，可重复调用（幂等）
+
+### 前端握手（Java-A 实现，Java-B 已备好数据源）
+
+- QRCodeView 签发成功时已把 `{"voucherNum":"TBK...","sn":"SN...","bizTypeName":"...","qrcodeImageUrl":"/api/qrcode/{num}/image",...}` 写入 `sessionStorage["lingmou_last_qrcode"]`（key 名即此，勿改）
+- **你只需**：预约创建成功（拿到 `POST /api/appointments` 返回的 `data.id`）后读一次该 key，调 `PUT /api/qrcode/{voucherNum}/bindAppointment?appointmentId={data.id}`，失败静默（不阻塞预约主流程，可下次再绑）
+
+### 文档产物（Day9 同步交付）
+
+- Postman 集合：`docs/Lingmou_API.postman_collection.json`（12 组全端点 + 示例，登录自动存 token）
+- Swagger 导出：Swagger UI `/swagger-ui.html`；一键导出脚本 `lingmou_backend/export-openapi.ps1`（输出 `docs` 同级 `openapi.json`，可再导入 Postman）
+- README 接口文档：`lingmou_backend/README.md`（端点总表 + 请求/响应示例 + 错误码总表 + Day9 链路图）
