@@ -101,6 +101,28 @@ export const useAppointmentStore = defineStore('appointment', () => {
     const appt = mapAppointment(raw)
     appt.branchName = data.branchName
     appointments.value.unshift(appt)
+
+    // Day9#4 直通码↔预约绑定：本会话若已签发 T 码（QRCodeView 存 lingmou_last_qrcode），
+    // 预约创建成功后补绑 vouchers.appointment_id。失败静默不阻塞预约主流程；
+    // 已绑定过的跳过，避免同会话后续无关预约把同一 T 码串绑到新预约上。
+    try {
+      const lastRaw = sessionStorage.getItem('lingmou_last_qrcode')
+      if (lastRaw) {
+        const last = JSON.parse(lastRaw)
+        if (last?.voucherNum && !last?.boundAppointmentId) {
+          await request.put(`/api/qrcode/${last.voucherNum}/bindAppointment`, null, {
+            params: { appointmentId: appt.id },
+          })
+          sessionStorage.setItem(
+            'lingmou_last_qrcode',
+            JSON.stringify({ ...last, boundAppointmentId: appt.id }),
+          )
+        }
+      }
+    } catch {
+      // 绑定失败可下次预约再试，不影响本次预约结果
+    }
+
     return appt
   }
 
