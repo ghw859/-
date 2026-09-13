@@ -35,11 +35,12 @@ import java.util.Map;
  * 业务直通码（QRCode）控制器
  *
  * 核心流程（T3 全链路，Day9 由 Java-B 接通前端 QRCodeView）：
- *   1. POST /api/qrcode/generate → 业务类型/材料归一化 → 调 Python /api/ai/precheck 材料预检
- *   2. 预检不通过 → HTTP 200 / code=0 / passed=false，data.missingLabels 供前端弹窗
- *      （预检拦截是正常业务分支，不是系统错误；未知业务 60004 仍走错误码）
- *   3. 预检通过 → 生成 T 凭证号 + 业务直通码内容 → 写 vouchers 表（可挂 appointment_id）
- *   4. 同步写 audit_logs 哈希链（VOUCHER_GENERATE），区块链审计页 GET /api/audit/my 可查
+ * 1. POST /api/qrcode/generate → 业务类型/材料归一化 → 调 Python /api/ai/precheck 材料预检
+ * 2. 预检不通过 → HTTP 200 / code=0 / passed=false，data.missingLabels 供前端弹窗
+ * （预检拦截是正常业务分支，不是系统错误；未知业务 60004 仍走错误码）
+ * 3. 预检通过 → 生成 T 凭证号 + 业务直通码内容 → 写 vouchers 表（可挂 appointment_id）
+ * 4. 同步写 audit_logs 哈希链（VOUCHER_GENERATE），区块链审计页 GET /api/audit/my 可查
+ * （best-effort：写链失败不回滚直通码，响应 data.auditSynced=false 供前端标注"存证同步中"）
  */
 @Slf4j
 @Tag(name = "业务直通码", description = "生成办理业务的业务直通码（二维码）")
@@ -140,10 +141,12 @@ public class QRCodeController {
         auditContent.put("extraData", extractExtraData(request.getMaterials()));
         auditContent.put("status", "已提交");
 
+        boolean auditSynced = true;
         try {
             auditLogService.writeLog(userId, loginName,
                     AuditLogService.ACTION_VOUCHER_GENERATE, objectMapper.writeValueAsString(auditContent));
         } catch (Exception e) {
+            auditSynced = false;
             log.error("[QRCode] 审计链写入失败（直通码已签发）: voucherNum={}, err={}", voucherNum, e.getMessage());
         }
 
@@ -157,6 +160,7 @@ public class QRCodeController {
         result.put("qrcodeImageUrl", "/api/qrcode/" + voucherNum + "/image");
         result.put("userId", userId);
         result.put("generatedAt", LocalDateTime.now().toString());
+        result.put("auditSynced", auditSynced);
 
         log.info("[QRCode] 直通码生成成功, voucherNum={}, userId={}, preFormId={}",
                 voucherNum, userId, request.getPreFormId());
@@ -223,15 +227,12 @@ public class QRCodeController {
     // 二维码图片接口（ZXing 生成真正的 PNG，公开访问，<img> 可直接引用）
     // ======================================================================
 
-    @Operation(summary = "返回业务直通码二维码图片",
-            description = "根据凭证号查询直通码内容，并用 ZXing 生成 PNG 二维码图片返回。T/V 凭证号均支持。\n"
-                    + "前端可直接 <img src=\"/api/qrcode/Txxxx/image\"> 展示。")
+    @Operation(summary = "返回业务直通码二维码图片", description = "根据凭证号查询直通码内容，并用 ZXing 生成 PNG 二维码图片返回。T/V 凭证号均支持。\n"
+            + "前端可直接 <img src=\"/api/qrcode/Txxxx/image\"> 展示。")
     @GetMapping(value = "/{voucherNum}/image", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getQrImage(
-            @Parameter(description = "凭证号：T 开头 21 位直通码，或 V 开头预约凭证")
-            @PathVariable String voucherNum,
-            @Parameter(description = "图片像素边长（默认 300）")
-            @RequestParam(value = "size", defaultValue = "300") int size) {
+            @Parameter(description = "凭证号：T 开头 21 位直通码，或 V 开头预约凭证") @PathVariable String voucherNum,
+            @Parameter(description = "图片像素边长（默认 300）") @RequestParam(value = "size", defaultValue = "300") int size) {
 
         if (!voucherService.isValidVoucherNum(voucherNum)) {
             throw new BusinessException(ResultCode.VOUCHER_NUM_NOT_FOUND, "凭证号格式不合法");

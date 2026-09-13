@@ -22,6 +22,8 @@ interface PassCode {
   bizTypeName: string
   qrcodeImageUrl: string
   generatedAt: string
+  /** 存证链写入是否成功；后端未返回时按已同步处理（兼容旧响应） */
+  auditSynced?: boolean
 }
 
 /** 本次会话已签发的直通码（刷新页面可恢复展示） */
@@ -111,6 +113,7 @@ async function generateCode() {
         bizTypeName: data.bizTypeName || ctx.bizTypeName || '',
         qrcodeImageUrl: data.qrcodeImageUrl || `/api/qrcode/${data.voucherNum}/image`,
         generatedAt: data.generatedAt || new Date().toISOString(),
+        auditSynced: data.auditSynced !== false,
       }
       sessionStorage.setItem(LAST_CODE_KEY, JSON.stringify(passCode.value))
       pendingCtx.value = null
@@ -215,7 +218,12 @@ function getStatusBadge(status: 'free' | 'moderate' | 'busy') {
         </div>
       </div>
       <!-- 签发状态徽章 -->
-      <span v-if="genState === 'success'"
+      <span v-if="genState === 'success' && passCode?.auditSynced === false"
+        class="text-[10px] font-bold bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full border border-amber-200 flex items-center gap-1"
+        title="直通码已签发，存证上链稍后自动重试">
+        <i class="fa-solid fa-hourglass-half"></i>存证同步中
+      </span>
+      <span v-else-if="genState === 'success'"
         class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>AI 预检通过 · 已上链存证
       </span>
