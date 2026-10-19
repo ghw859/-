@@ -11,6 +11,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: lingmou-mysql
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
       MYSQL_DATABASE: lingmou
@@ -19,6 +20,8 @@ services:
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
     volumes:
       - mysql_data:/var/lib/mysql
+      # 首次建卷时自动执行建表与演示数据初始化（仅空数据目录时生效）
+      - ./lingmou_backend/src/main/resources/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     # 宿主机调试需要再放开；默认注释避免与本地 MySQL 端口冲突
     # ports:
     #   - "3306:3306"
@@ -33,6 +36,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: lingmou-redis
+    restart: unless-stopped
     volumes:
       - redis_data:/data
     # ports:
@@ -47,6 +51,7 @@ services:
   ai:
     build: ./lingmou_ai
     container_name: lingmou-ai
+    restart: unless-stopped
     # 团队成员 clone 后若无该文件（已 gitignore），AI 自动走规则降级，不影响启动
     env_file:
       - path: ./lingmou_ai/.env
@@ -66,6 +71,7 @@ services:
   backend:
     build: ./lingmou_backend
     container_name: lingmou-backend
+    restart: unless-stopped
     environment:
       # 用 Spring Boot 松散绑定环境变量覆盖 application.yml 的 localhost，Java 代码零改动
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/lingmou?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowPublicKeyRetrieval=true
@@ -90,6 +96,7 @@ services:
   frontend:
     build: ./gonghang_vue3
     container_name: lingmou-frontend
+    restart: unless-stopped
     depends_on:
       - backend
       - ai
