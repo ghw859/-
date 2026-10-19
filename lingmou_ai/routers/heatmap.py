@@ -32,8 +32,8 @@ def _val_to_class(val: int) -> Dict[str, str]:
 
 
 def _short_name(name: str) -> str:
-    """行名截断：超 8 字保留前 7 字 + …（前端 name.length > 8 分支）"""
-    return name[:7] + "…" if len(name) > 8 else name
+    """行名：完整返回网点全称（前端表格已按最长 11 字预留列宽）"""
+    return name
 
 
 def _tip_short(name: str) -> str:
@@ -102,7 +102,8 @@ async def heatmap(date_param: str = Query(..., alias="date", description="today 
             "data": None,
         }
 
-    cache_key = f"heatmap:v2:{target.isoformat()}"
+    # v3：网点名改为完整名称，升版本避免命中旧截断数据的缓存
+    cache_key = f"heatmap:v3:{target.isoformat()}"
 
     # 1. Redis 缓存（整图一个键，支撑 <200ms 目标）
     try:

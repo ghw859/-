@@ -329,11 +329,10 @@ onMounted(() => {
           <input v-if="!isTerminalStatus(a.status)" type="checkbox" :checked="selectedApptSet.has(a.voucherNum)"
             @click.stop="toggleApptSelect(a.voucherNum)"
             class="absolute top-2 right-2 w-3.5 h-3.5 rounded border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer">
-          <div class="flex items-center justify-between mb-1 pr-5">
-            <div class="text-xs font-black text-slate-900 truncate">{{ a.branchName }}</div>
-          </div>
-          <div class="flex items-center gap-1 mb-1">
-            <span :class="['px-1.5 py-0.5 rounded text-[9px] font-bold', getStatusBadge(a.status).cls]">
+          <!-- 网点全名优先完整展示，放不下自动换行；状态徽标紧随名称之后 -->
+          <div class="flex flex-wrap items-center gap-x-1 gap-y-0.5 mb-1" :class="{ 'pr-5': !isTerminalStatus(a.status) }">
+            <span class="text-xs font-black text-slate-900 leading-snug break-words">{{ a.branchName }}</span>
+            <span :class="['shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold', getStatusBadge(a.status).cls]">
               {{ getStatusBadge(a.status).text }}
             </span>
           </div>
@@ -360,21 +359,21 @@ onMounted(() => {
     <!-- 有预约时的进度面板 -->
     <template v-if="currentAppt">
       <!-- 当前状态大卡片 -->
-      <div class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-4 sm:p-5 rounded-2xl shadow-lg transition-all">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-white">
-          <div>
-            <div class="text-[10px] font-bold text-white/70 uppercase tracking-wider">当前状态</div>
-            <div class="text-xl sm:text-2xl font-black mt-0.5">{{ statusText }}</div>
-            <div class="text-xs font-bold text-white/80 mt-1">{{ statusSubText }}</div>
+      <div class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-3 sm:p-5 rounded-2xl shadow-lg transition-all">
+        <div class="flex items-center justify-between gap-3 text-white">
+          <div class="min-w-0">
+            <div class="text-[9px] sm:text-[10px] font-bold text-white/70 uppercase tracking-wider">当前状态</div>
+            <div class="text-lg sm:text-2xl font-black mt-0.5">{{ statusText }}</div>
+            <div class="text-[10px] sm:text-xs font-bold text-white/80 mt-0.5 sm:mt-1">{{ statusSubText }}</div>
           </div>
-          <div class="text-left sm:text-right">
-            <div class="text-[10px] font-bold text-white/70 uppercase tracking-wider">凭证号</div>
-            <div class="text-lg sm:text-2xl font-black tracking-wide sm:tracking-wider break-all">{{ voucherDisplay(currentAppt) }}</div>
-            <div class="text-xs font-bold text-white/80 mt-1">
+          <div class="text-right shrink-0 max-w-[56%]">
+            <div class="text-[9px] sm:text-[10px] font-bold text-white/70 uppercase tracking-wider">凭证号</div>
+            <div class="text-sm sm:text-2xl font-black tracking-wide sm:tracking-wider break-all leading-tight">{{ voucherDisplay(currentAppt) }}</div>
+            <div class="text-[10px] sm:text-xs font-bold text-white/80 mt-0.5 sm:mt-1">
               {{ currentAppt.window && currentStep >= 3 ? currentAppt.window : '待分配窗口' }}
             </div>
             <button @click="openVoucherModal"
-              class="mt-2 bg-white/20 hover:bg-white/30 border border-white/40 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer">
+              class="mt-1 sm:mt-2 bg-white/20 hover:bg-white/30 border border-white/40 text-white text-[9px] sm:text-[10px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg transition-all cursor-pointer">
               <i class="fa-solid fa-receipt mr-1"></i>凭证详情
             </button>
           </div>

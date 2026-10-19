@@ -625,7 +625,7 @@ function switchBusinessFormLayout(type: BizType) {
 </script>
 
 <template>
-  <div class="p-3 md:p-6 space-y-4">
+  <div class="preform-view p-3 md:p-6 space-y-4">
     <div class="bg-white/50 backdrop-blur-2xl p-3 sm:p-6 rounded-3xl border border-slate-200/60 shadow-sm space-y-6">
       <!-- 头部标题 -->
       <div class="flex items-center space-x-2 border-b border-slate-200/60 pb-3">

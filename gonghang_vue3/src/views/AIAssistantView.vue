@@ -296,9 +296,15 @@ onMounted(() => {
 
       <!-- 3. 底部输入控制栏 -->
       <div class="flex items-center space-x-2 pt-3 border-t border-slate-200/60 shrink-0">
-        <input v-model="inputMsg" @keyup.enter="sendMessage" type="text"
-          placeholder="请问您想办理什么业务？如：办卡、外汇、取现、理财..."
-          class="flex-1 bg-white/80 border border-slate-200 text-sm font-bold rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-all placeholder:text-slate-400">
+        <div class="relative flex-1">
+          <input v-model="inputMsg" @keyup.enter="sendMessage" type="text" aria-label="请输入您想办理的业务"
+            class="w-full bg-white/80 border border-slate-200 text-sm font-bold rounded-xl px-2.5 sm:px-4 py-3 focus:outline-none focus:border-blue-500 transition-all">
+          <!-- 用可换行的提示层代替原生 placeholder，窄屏也能完整显示整句提示 -->
+          <span v-if="!inputMsg"
+            class="absolute inset-y-0 left-2.5 sm:left-4 right-2 flex items-center pointer-events-none text-[12px] sm:text-sm text-slate-400 leading-tight">
+            <span class="block">请问您想办理什么业务？如：办卡、外汇、取现、理财...</span>
+          </span>
+        </div>
         <button @click="sendMessage"
           class="bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-bold px-3 sm:px-5 py-3 rounded-xl shadow-md hover:opacity-90 cursor-pointer transition-all shrink-0">
           <span class="hidden sm:inline">发送指令</span>

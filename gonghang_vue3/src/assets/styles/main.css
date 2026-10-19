@@ -593,6 +593,12 @@ body {
     font-size: 16px !important;
   }
 
+  /* 预填单页输入项较多、占位提示偏长，占位文字略小于正文，避免灰字显得过大 */
+  .preform-view input::placeholder,
+  .preform-view textarea::placeholder {
+    font-size: 13px;
+  }
+
   /* 底部标签栏在老年模式下放大文字，标签过密时仍保持单行 */
   .elderly-mode .bottom-nav-item span {
     font-size: 12px !important;
