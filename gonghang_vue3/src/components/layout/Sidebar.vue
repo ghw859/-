@@ -14,7 +14,7 @@ const menuItems = [
 </script>
 
 <template>
-  <aside class="hidden md:flex w-72 bg-white/45 backdrop-blur-2xl rounded-3xl border border-slate-200/80 shadow-sm flex-col justify-between p-5 shrink-0 transition-all duration-300">
+  <aside class="hidden md:flex w-60 xl:w-72 bg-white/45 backdrop-blur-2xl rounded-3xl border border-slate-200/80 shadow-sm flex-col justify-between p-4 xl:p-5 shrink-0 transition-all duration-300">
     <div class="space-y-6">
       <!-- 品牌徽标区 -->
       <div class="flex items-center space-x-3 px-2">
@@ -54,7 +54,7 @@ const menuItems = [
               :class="[item.icon, 'text-sm']"
               :style="item.title === 'AI数字人大堂经理' ? 'color: #0891b2; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;' : ''"
             ></i>
-            <span :class="item.title === 'AI数字人大堂经理' && !isActive ? 'font-bold text-slate-800' : ''">
+            <span class="whitespace-nowrap" :class="item.title === 'AI数字人大堂经理' && !isActive ? 'font-bold text-slate-800' : ''">
               {{ item.title }}
             </span>
           </button>

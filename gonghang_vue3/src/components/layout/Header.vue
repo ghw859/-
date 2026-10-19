@@ -52,9 +52,9 @@ onUnmounted(() => {
       <h1 class="text-sm md:text-base font-black text-slate-800 truncate">{{ $route.meta.title || '数据总览看板' }}</h1>
     </div>
 
-    <div class="flex items-center space-x-2 md:space-x-6 shrink-0">
-      <!-- 量子加密链路状态 + 实时时间 -->
-      <div class="hidden sm:flex items-center space-x-3 bg-slate-900/5 border border-cyan-500/10 rounded-full py-1.5 px-4 text-[11px] font-mono">
+    <div class="flex items-center space-x-2 md:space-x-3 lg:space-x-6 shrink-0">
+      <!-- 量子加密链路状态 + 实时时间（窄屏优先保证页面标题完整） -->
+      <div class="hidden xl:flex items-center space-x-3 bg-slate-900/5 border border-cyan-500/10 rounded-full py-1.5 px-4 text-[11px] font-mono">
         <div class="flex items-center space-x-1.5">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <span class="text-slate-500">量子加密链路:</span>
@@ -83,7 +83,7 @@ onUnmounted(() => {
       <div class="relative">
         <button @click="toggleMenu"
           class="flex items-center space-x-2 md:space-x-3 border-l border-slate-200 pl-2.5 md:pl-6 cursor-pointer hover:bg-slate-100/50 rounded-xl py-1 pr-1 md:pr-2 transition-all">
-          <div class="hidden sm:flex flex-col text-right">
+          <div class="hidden lg:flex flex-col text-right">
             <span class="text-xs font-bold text-slate-700">诸葛灵枢</span>
             <span class="text-[9px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md mt-0.5 border border-emerald-200/50">工银贵宾客户</span>
           </div>

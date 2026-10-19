@@ -346,17 +346,17 @@ const recentTransactions = [
             <p class="text-[10px] font-bold text-slate-400">6网点 × 8时段 · 基于历史30天数据预测</p>
           </div>
         </div>
-        <div class="flex items-center gap-2 text-[9px] font-bold text-slate-400">
+        <div class="hidden sm:flex shrink-0 items-center gap-2 text-[9px] font-bold text-slate-400">
           <span class="flex items-center gap-0.5"><span class="w-2.5 h-2.5 rounded bg-emerald-400"></span>畅通</span>
           <span class="flex items-center gap-0.5"><span class="w-2.5 h-2.5 rounded bg-amber-400"></span>适中</span>
           <span class="flex items-center gap-0.5"><span class="w-2.5 h-2.5 rounded bg-rose-400"></span>繁忙</span>
         </div>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full text-center border-collapse min-w-[600px]">
+        <table class="w-full table-fixed text-center border-collapse min-w-[600px]">
           <thead>
             <tr>
-              <th class="text-[10px] font-black text-slate-500 text-left pl-2 pb-2">网点</th>
+              <th class="w-24 text-[10px] font-black text-slate-500 text-left pl-2 pb-2">网点</th>
               <th v-for="h in hours" :key="h" class="text-[9px] font-bold text-slate-400 pb-2 px-1">{{ h }}</th>
             </tr>
           </thead>
