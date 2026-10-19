@@ -43,12 +43,16 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <header class="h-16 w-full border border-slate-200/80 bg-white/30 backdrop-blur-xl px-8 flex items-center justify-between shrink-0 rounded-2xl mt-2 shadow-xs relative z-50">
-    <div>
-      <h1 class="text-base font-black text-slate-800">{{ $route.meta.title || '数据总览看板' }}</h1>
+  <header class="h-14 md:h-16 w-full border border-slate-200/80 bg-white/30 backdrop-blur-xl px-3 md:px-8 flex items-center justify-between shrink-0 rounded-2xl mt-0 md:mt-2 shadow-xs relative z-50">
+    <!-- 移动端隐藏侧边栏后，在顶栏左侧补品牌标识 -->
+    <div class="flex items-center gap-2 min-w-0">
+      <div class="md:hidden w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-500 flex items-center justify-center shadow-md shadow-cyan-500/20 shrink-0">
+        <i class="fa-solid fa-eye text-white text-sm"></i>
+      </div>
+      <h1 class="text-sm md:text-base font-black text-slate-800 truncate">{{ $route.meta.title || '数据总览看板' }}</h1>
     </div>
 
-    <div class="flex items-center space-x-6">
+    <div class="flex items-center space-x-2 md:space-x-6 shrink-0">
       <!-- 量子加密链路状态 + 实时时间 -->
       <div class="hidden sm:flex items-center space-x-3 bg-slate-900/5 border border-cyan-500/10 rounded-full py-1.5 px-4 text-[11px] font-mono">
         <div class="flex items-center space-x-1.5">
@@ -64,7 +68,7 @@ onUnmounted(() => {
       <button
         @click="toggleElderly"
         :class="[
-          'flex items-center gap-[6px] px-[14px] py-[6px] rounded-[20px] text-xs font-bold border transition-all cursor-pointer whitespace-nowrap',
+          'flex items-center gap-[6px] px-2.5 md:px-[14px] py-[6px] rounded-[20px] text-xs font-bold border transition-all cursor-pointer whitespace-nowrap',
           elderly.isElderly
             ? 'bg-gradient-to-br from-amber-500 to-amber-600 text-white border-amber-600 shadow-[0_4px_16px_rgba(245,158,11,0.4)]'
             : 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-700 border-yellow-200 hover:from-amber-100 hover:to-amber-300 hover:scale-105 hover:shadow-[0_4px_12px_rgba(251,191,36,0.3)]'
@@ -72,18 +76,18 @@ onUnmounted(() => {
         title="切换老年模式"
       >
         <i class="fa-solid fa-user-friends text-base"></i>
-        <span>{{ elderly.isElderly ? '标准模式' : '老年模式' }}</span>
+        <span class="hidden sm:inline">{{ elderly.isElderly ? '标准模式' : '老年模式' }}</span>
       </button>
 
       <!-- 用户头像 + 诸葛灵枢 -->
       <div class="relative">
         <button @click="toggleMenu"
-          class="flex items-center space-x-3 border-l border-slate-200 pl-6 cursor-pointer hover:bg-slate-100/50 rounded-xl py-1 pr-2 transition-all">
-          <div class="flex flex-col text-right">
+          class="flex items-center space-x-2 md:space-x-3 border-l border-slate-200 pl-2.5 md:pl-6 cursor-pointer hover:bg-slate-100/50 rounded-xl py-1 pr-1 md:pr-2 transition-all">
+          <div class="hidden sm:flex flex-col text-right">
             <span class="text-xs font-bold text-slate-700">诸葛灵枢</span>
             <span class="text-[9px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md mt-0.5 border border-emerald-200/50">工银贵宾客户</span>
           </div>
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-200 to-slate-300 border border-white shadow-sm flex items-center justify-center text-slate-600 overflow-hidden">
+          <div class="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-gradient-to-br from-slate-200 to-slate-300 border border-white shadow-sm flex items-center justify-center text-slate-600 overflow-hidden">
             <i class="fa-solid fa-user text-base text-slate-500"></i>
           </div>
         </button>

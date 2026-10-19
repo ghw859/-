@@ -4,6 +4,10 @@
 -- 创建时间: 2026-09-08
 -- ============================================
 
+-- 显式声明脚本为 utf8mb4：MySQL 官方镜像在 C/POSIX locale 下客户端默认 latin1，
+-- 会导致容器首次初始化时中文被双重编码。init 脚本与手工导入均适用。
+SET NAMES utf8mb4;
+
 -- 创建数据库（如果不存在）
 CREATE DATABASE IF NOT EXISTS lingmou DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 

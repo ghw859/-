@@ -574,6 +574,35 @@ body {
   }
 }
 
+/* ========== 移动端适配 ========== */
+@media (max-width: 767px) {
+  /* 触屏设备不触发桌面端的悬浮位移，避免卡片点击时抖动 */
+  .tech-card:hover {
+    transform: none;
+    box-shadow: 0 10px 24px -12px rgba(148, 163, 184, 0.35);
+  }
+
+  .hover-scale:hover {
+    transform: none;
+  }
+
+  /* iOS Safari 对 <16px 输入框聚焦时会自动放大页面，移动端统一 16px 规避 */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* 底部标签栏在老年模式下放大文字，标签过密时仍保持单行 */
+  .elderly-mode .bottom-nav-item span {
+    font-size: 12px !important;
+  }
+
+  .elderly-mode .bottom-nav-item i {
+    font-size: 19px !important;
+  }
+}
+
 /* Scrollbar hide for cleaner look */
 ::-webkit-scrollbar {
   width: 6px;

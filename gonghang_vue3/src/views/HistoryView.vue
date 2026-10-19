@@ -326,7 +326,7 @@ function getFieldsForBizType(log: AuditLog): FieldItem[] {
 </script>
 
 <template>
-  <div class="p-6 space-y-4">
+  <div class="p-3 md:p-6 space-y-4">
     <!-- 顶部双卡片 -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <!-- 左侧统计卡片 -->

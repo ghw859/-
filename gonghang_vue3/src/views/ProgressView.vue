@@ -285,20 +285,20 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-6 space-y-4">
+  <div class="p-3 md:p-6 space-y-4">
     <!-- 顶部标题栏 -->
-    <div class="bg-white/50 backdrop-blur-2xl p-4 rounded-2xl border border-slate-200/60 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white">
+    <div class="bg-white/50 backdrop-blur-2xl p-4 rounded-2xl border border-slate-200/60 flex items-center justify-between gap-3">
+      <div class="flex items-center space-x-3 min-w-0">
+        <div class="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white">
           <i class="fa-solid fa-gauge-high text-lg"></i>
         </div>
-        <div>
+        <div class="min-w-0">
           <h3 class="text-sm font-black text-slate-800">办理进度实时追踪</h3>
           <p class="text-xs text-slate-500 font-medium">多预约管理 · 全程状态可视 · 叫号不等待</p>
         </div>
       </div>
       <button @click="refreshAll" :disabled="refreshing"
-        class="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-lg border border-slate-200 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+        class="shrink-0 whitespace-nowrap flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-lg border border-slate-200 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
         <i class="fa-solid fa-rotate text-sm" :class="refreshing ? 'animate-spin' : ''"></i>
         <span>{{ refreshing ? '刷新中' : '刷新' }}</span>
       </button>
@@ -360,16 +360,16 @@ onMounted(() => {
     <!-- 有预约时的进度面板 -->
     <template v-if="currentAppt">
       <!-- 当前状态大卡片 -->
-      <div class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-5 rounded-2xl shadow-lg transition-all">
-        <div class="flex items-center justify-between text-white">
+      <div class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-4 sm:p-5 rounded-2xl shadow-lg transition-all">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-white">
           <div>
             <div class="text-[10px] font-bold text-white/70 uppercase tracking-wider">当前状态</div>
-            <div class="text-2xl font-black mt-0.5">{{ statusText }}</div>
+            <div class="text-xl sm:text-2xl font-black mt-0.5">{{ statusText }}</div>
             <div class="text-xs font-bold text-white/80 mt-1">{{ statusSubText }}</div>
           </div>
-          <div class="text-right">
+          <div class="text-left sm:text-right">
             <div class="text-[10px] font-bold text-white/70 uppercase tracking-wider">凭证号</div>
-            <div class="text-2xl font-black tracking-wider">{{ voucherDisplay(currentAppt) }}</div>
+            <div class="text-lg sm:text-2xl font-black tracking-wide sm:tracking-wider break-all">{{ voucherDisplay(currentAppt) }}</div>
             <div class="text-xs font-bold text-white/80 mt-1">
               {{ currentAppt.window && currentStep >= 3 ? currentAppt.window : '待分配窗口' }}
             </div>

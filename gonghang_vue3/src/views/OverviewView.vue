@@ -295,7 +295,7 @@ const recentTransactions = [
 </script>
 
 <template>
-  <div class="p-6 space-y-6">
+  <div class="p-3 sm:p-6 space-y-4 sm:space-y-6">
     <!-- 顶部核心资产态势数据舱 -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <div v-for="stat in stats" :key="stat.label"

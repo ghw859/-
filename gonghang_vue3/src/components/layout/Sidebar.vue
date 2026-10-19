@@ -14,7 +14,7 @@ const menuItems = [
 </script>
 
 <template>
-  <aside class="w-72 bg-white/45 backdrop-blur-2xl rounded-3xl border border-slate-200/80 shadow-sm flex flex-col justify-between p-5 shrink-0 transition-all duration-300">
+  <aside class="hidden md:flex w-72 bg-white/45 backdrop-blur-2xl rounded-3xl border border-slate-200/80 shadow-sm flex-col justify-between p-5 shrink-0 transition-all duration-300">
     <div class="space-y-6">
       <!-- 品牌徽标区 -->
       <div class="flex items-center space-x-3 px-2">
