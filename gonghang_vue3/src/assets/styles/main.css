@@ -586,9 +586,9 @@ body {
     transform: none;
   }
 
-  /* iOS Safari 对 <16px 输入框聚焦时会自动放大页面，移动端统一 16px 规避 */
-  input,
-  select,
+  /* iOS Safari 对 <16px 文本输入框聚焦时会自动放大页面，移动端统一 16px 规避。
+     select 走系统选择器不会触发缩放，保留各页面自身的小字号，避免筛选框文字过大。 */
+  input:not([type="checkbox"]):not([type="radio"]),
   textarea {
     font-size: 16px !important;
   }

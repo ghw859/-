@@ -76,7 +76,7 @@ onUnmounted(() => {
         title="切换老年模式"
       >
         <i class="fa-solid fa-user-friends text-base"></i>
-        <span class="hidden sm:inline">{{ elderly.isElderly ? '标准模式' : '老年模式' }}</span>
+        <span>{{ elderly.isElderly ? '标准模式' : '老年模式' }}</span>
       </button>
 
       <!-- 用户头像 + 诸葛灵枢 -->
