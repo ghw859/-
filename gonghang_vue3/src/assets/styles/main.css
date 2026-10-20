@@ -609,6 +609,13 @@ body {
   }
 }
 
+/* 历史查询：手机端搜索框与上方筛选下拉框保持同字号，避免 16px 把输入框撑高 */
+@media (max-width: 767px) {
+  input.input-compact:not([type="checkbox"]):not([type="radio"]) {
+    font-size: 12px !important;
+  }
+}
+
 /* Scrollbar hide for cleaner look */
 ::-webkit-scrollbar {
   width: 6px;

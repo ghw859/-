@@ -18,9 +18,9 @@ const chatContainer = ref<HTMLElement | null>(null)
 
 // 快捷指令（欢迎消息内嵌）
 const quickCommands = [
-  { label: '附近网点推荐 🏦', cmd: '附近哪个网点人少？' },
-  { label: '业务材料咨询 📋', cmd: '我想办外汇需要带什么材料？' },
-  { label: '排队等待查询 ⏱️', cmd: '现在排队大概要等多久？' },
+  { label: '附近网点推荐 🏦', short: '附近网点 🏦', cmd: '附近哪个网点人少？' },
+  { label: '业务材料咨询 📋', short: '业务材料 📋', cmd: '我想办外汇需要带什么材料？' },
+  { label: '排队等待查询 ⏱️', short: '排队查询 ⏱️', cmd: '现在排队大概要等多久？' },
 ]
 
 // 知识库匹配
@@ -206,7 +206,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-3 md:p-6 h-[calc(100dvh-9.5rem)] md:h-[calc(100vh-120px)] flex flex-col">
+  <div class="p-3 md:p-6 h-[calc(100dvh-8.5rem)] md:h-[calc(100vh-96px)] flex flex-col">
     <div class="bg-white/50 backdrop-blur-2xl p-4 md:p-6 rounded-3xl border border-slate-200/60 shadow-sm flex flex-col h-full min-h-0 md:min-h-[580px]">
 
       <!-- 1. 标题头部 -->
@@ -217,7 +217,7 @@ onMounted(() => {
           </div>
           <div>
             <h3 class="text-sm font-black text-slate-800">"灵枢" AI数字人大堂经理</h3>
-            <p class="text-xs text-slate-400 font-bold">智能引导 · 网点推荐 · 业务咨询 · 全程陪伴</p>
+            <p class="text-[11px] text-slate-400 font-bold">智能引导 · 网点推荐 · 业务咨询 · 全程陪伴</p>
           </div>
         </div>
         <span class="hidden sm:inline-flex text-xs font-mono font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
@@ -260,7 +260,7 @@ onMounted(() => {
             <!-- 真实回答区（欢迎消息或打字完成后的内容） -->
             <div v-if="msg.id === 'welcome' || (!msg.hasCoT && msg.content) || (msg.hasCoT && msg.cotSteps && msg.cotSteps.length === 4)"
               :class="[
-                'p-3.5 rounded-2xl shadow-sm leading-relaxed',
+                'p-3.5 rounded-2xl shadow-sm leading-relaxed text-[13px] sm:text-sm',
                 msg.id === 'welcome' ? 'bg-blue-600 text-white rounded-tl-none' :
                 msg.hasCoT ? 'bg-blue-600 text-white rounded-tl-none' :
                 'bg-blue-600 text-white rounded-tl-none'
@@ -272,11 +272,12 @@ onMounted(() => {
               <!-- 欢迎消息内嵌快捷指令 -->
               <template v-if="msg.showQuickCmds">
                 <br>
-                <span class="mt-1 block text-xs text-cyan-200 font-bold">💡 快捷指令推荐：</span>
-                <div class="flex flex-wrap gap-1.5 mt-1.5">
+                <span class="mt-1 block text-[11px] sm:text-xs text-cyan-200 font-bold">💡 快捷指令推荐：</span>
+                <div class="grid grid-cols-3 gap-1.5 mt-1.5 sm:flex sm:flex-wrap">
                   <button v-for="q in quickCommands" :key="q.cmd" @click="useQuick(q.cmd)"
-                    class="bg-white/20 hover:bg-white/30 text-white text-xs px-2 py-0.5 rounded border border-white/20 transition-all cursor-pointer">
-                    {{ q.label }}
+                    class="bg-white/20 hover:bg-white/30 text-white text-[11px] sm:text-xs px-1 sm:px-2 py-0.5 rounded border border-white/20 transition-all cursor-pointer leading-tight">
+                    <span class="sm:hidden">{{ q.short }}</span>
+                    <span class="hidden sm:inline">{{ q.label }}</span>
                   </button>
                 </div>
               </template>

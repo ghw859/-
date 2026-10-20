@@ -1147,17 +1147,17 @@ function switchBusinessFormLayout(type: BizType) {
               <div>
                 <label class="text-xs font-bold text-slate-400 block mb-1.5">📷 线下核验必备：身份证影像上传</label>
                 <div class="grid grid-cols-2 gap-3">
-                  <label class="border border-dashed border-slate-200 bg-slate-50/50 hover:bg-slate-100 transition-all rounded-lg p-3 flex flex-col items-center justify-center gap-1 cursor-pointer min-h-[64px] relative group">
+                  <label class="border border-dashed border-slate-200 bg-slate-50/50 hover:bg-slate-100 transition-all rounded-lg p-2 sm:p-3 flex flex-col items-center justify-center gap-1 cursor-pointer aspect-[856/540] sm:aspect-auto sm:min-h-[64px] relative group">
                     <input type="file" accept="image/*" class="hidden" @change="manualInfo.frontUploaded = true">
                     <i class="fa-solid fa-camera text-slate-400 group-hover:text-cyan-600 text-sm"></i>
-                    <span :class="['text-xs font-bold', manualInfo.frontUploaded ? 'text-cyan-600' : 'text-slate-400']">
+                    <span :class="['text-xs font-bold text-center', manualInfo.frontUploaded ? 'text-cyan-600' : 'text-slate-400']">
                       {{ manualInfo.frontUploaded ? '✅ 已挂载(正面)' : '[未上传人像面]' }}
                     </span>
                   </label>
-                  <label class="border border-dashed border-slate-200 bg-slate-50/50 hover:bg-slate-100 transition-all rounded-lg p-3 flex flex-col items-center justify-center gap-1 cursor-pointer min-h-[64px] relative group">
+                  <label class="border border-dashed border-slate-200 bg-slate-50/50 hover:bg-slate-100 transition-all rounded-lg p-2 sm:p-3 flex flex-col items-center justify-center gap-1 cursor-pointer aspect-[856/540] sm:aspect-auto sm:min-h-[64px] relative group">
                     <input type="file" accept="image/*" class="hidden" @change="manualInfo.backUploaded = true">
                     <i class="fa-solid fa-camera text-slate-400 group-hover:text-cyan-600 text-sm"></i>
-                    <span :class="['text-xs font-bold', manualInfo.backUploaded ? 'text-cyan-600' : 'text-slate-400']">
+                    <span :class="['text-xs font-bold text-center', manualInfo.backUploaded ? 'text-cyan-600' : 'text-slate-400']">
                       {{ manualInfo.backUploaded ? '✅ 已挂载(国徽面)' : '[未上传国徽面]' }}
                     </span>
                   </label>

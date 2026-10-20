@@ -690,53 +690,64 @@ function getSlotTimeClass(s: { capacity: number; isPast: boolean }, idx: number)
           <i class="fa-solid fa-filter text-blue-500"></i> 智能筛选：
         </span>
 
-        <div class="flex items-center gap-1.5">
-          <span class="text-[10px] font-bold text-slate-400">客流</span>
-          <select v-model="filterStatus"
-            class="bg-white border border-slate-200 rounded-lg text-[11px] font-bold px-2 py-1 focus:outline-none cursor-pointer">
-            <option value="all">全部</option>
-            <option value="free">畅通</option>
-            <option value="moderate">适中</option>
-            <option value="busy">繁忙</option>
-          </select>
+        <!-- 手机端：计数与重置并入标题行，筛选条件 2×2 对齐 -->
+        <div class="flex items-center gap-2 ml-auto sm:hidden">
+          <span class="text-[10px] font-bold text-slate-500">共 {{ filteredBranches.length }} 个网点</span>
+          <button @click="resetFilter"
+            class="text-[10px] font-bold text-slate-500 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-2 py-1 rounded-lg border border-slate-200 transition-all cursor-pointer flex items-center gap-1">
+            <i class="fa-solid fa-rotate-left"></i> 重置
+          </button>
         </div>
 
-        <div class="flex items-center gap-1.5">
-          <span class="text-[10px] font-bold text-slate-400">距离</span>
-          <select v-model="filterDistance"
-            class="bg-white border border-slate-200 rounded-lg text-[11px] font-bold px-2 py-1 focus:outline-none cursor-pointer">
-            <option value="all">全部</option>
-            <option value="near">1km 内</option>
-            <option value="mid">1-3km</option>
-            <option value="far">3km 以上</option>
-          </select>
-        </div>
+        <div class="grid grid-cols-2 gap-2 w-full mt-2 sm:mt-0 sm:w-auto sm:contents">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-bold text-slate-400 shrink-0">客流</span>
+            <select v-model="filterStatus"
+              class="flex-1 min-w-0 sm:flex-none bg-white border border-slate-200 rounded-lg text-[11px] font-bold px-2 py-1 focus:outline-none cursor-pointer">
+              <option value="all">全部</option>
+              <option value="free">畅通</option>
+              <option value="moderate">适中</option>
+              <option value="busy">繁忙</option>
+            </select>
+          </div>
 
-        <div class="flex items-center gap-1.5">
-          <span class="text-[10px] font-bold text-slate-400">业务</span>
-          <select v-model="filterService"
-            class="bg-white border border-slate-200 rounded-lg text-[11px] font-bold px-2 py-1 focus:outline-none cursor-pointer">
-            <option v-for="opt in serviceOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-          </select>
-        </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-bold text-slate-400 shrink-0">距离</span>
+            <select v-model="filterDistance"
+              class="flex-1 min-w-0 sm:flex-none bg-white border border-slate-200 rounded-lg text-[11px] font-bold px-2 py-1 focus:outline-none cursor-pointer">
+              <option value="all">全部</option>
+              <option value="near">1km 内</option>
+              <option value="mid">1-3km</option>
+              <option value="far">3km 以上</option>
+            </select>
+          </div>
 
-        <div class="flex items-center gap-1.5">
-          <span class="text-[10px] font-bold text-slate-400">排序</span>
-          <select v-model="filterSort"
-            class="bg-white border border-slate-200 rounded-lg text-[11px] font-bold px-2 py-1 focus:outline-none cursor-pointer">
-            <option value="recommend">智能推荐</option>
-            <option value="distance">距离最近</option>
-            <option value="wait">等待最短</option>
-            <option value="flow">客流最少</option>
-          </select>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-bold text-slate-400 shrink-0">业务</span>
+            <select v-model="filterService"
+              class="flex-1 min-w-0 sm:flex-none bg-white border border-slate-200 rounded-lg text-[11px] font-bold px-2 py-1 focus:outline-none cursor-pointer">
+              <option v-for="opt in serviceOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-bold text-slate-400 shrink-0">排序</span>
+            <select v-model="filterSort"
+              class="flex-1 min-w-0 sm:flex-none bg-white border border-slate-200 rounded-lg text-[11px] font-bold px-2 py-1 focus:outline-none cursor-pointer">
+              <option value="recommend">智能推荐</option>
+              <option value="distance">距离最近</option>
+              <option value="wait">等待最短</option>
+              <option value="flow">客流最少</option>
+            </select>
+          </div>
         </div>
 
         <button @click="resetFilter"
-          class="text-[10px] font-bold text-slate-500 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-2 py-1 rounded-lg border border-slate-200 transition-all cursor-pointer flex items-center gap-1">
+          class="hidden sm:flex text-[10px] font-bold text-slate-500 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-2 py-1 rounded-lg border border-slate-200 transition-all cursor-pointer items-center gap-1">
           <i class="fa-solid fa-rotate-left"></i> 重置
         </button>
 
-        <span class="ml-auto text-[10px] font-bold text-slate-500">
+        <span class="hidden sm:inline ml-auto text-[10px] font-bold text-slate-500">
           共 {{ filteredBranches.length }} 个网点
         </span>
       </div>
@@ -760,9 +771,9 @@ function getSlotTimeClass(s: { capacity: number; isPast: boolean }, idx: number)
     </div>
 
     <!-- 网点格栅 -->
-    <div v-if="filteredBranches.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div v-if="filteredBranches.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
       <div v-for="(b, idx) in filteredBranches" :key="b.id"
-        class="branch-card bg-white/60 backdrop-blur-2xl p-5 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-4 tech-card relative overflow-hidden transition-all hover:shadow-md hover:border-cyan-300/50">
+        class="branch-card bg-white/60 backdrop-blur-2xl p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-2 sm:space-y-4 tech-card relative overflow-hidden transition-all hover:shadow-md hover:border-cyan-300/50">
 
         <!-- 收藏按钮 -->
         <button @click="branchStore.toggleFavorite(b.id)"
@@ -792,7 +803,7 @@ function getSlotTimeClass(s: { capacity: number; isPast: boolean }, idx: number)
         </div>
 
         <!-- 核心指标 -->
-        <div class="grid grid-cols-2 gap-3 bg-slate-50/80 p-3 rounded-2xl border border-slate-100">
+        <div class="grid grid-cols-2 gap-2 sm:gap-3 bg-slate-50/80 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-100">
           <div class="space-y-0.5">
             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">实时在店人数</span>
             <div class="flex items-baseline space-x-1">

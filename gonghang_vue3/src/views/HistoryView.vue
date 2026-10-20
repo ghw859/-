@@ -431,8 +431,8 @@ function getFieldsForBizType(log: AuditLog): FieldItem[] {
           <label class="text-[10px] font-bold text-slate-500 block mb-1">搜索流水号</label>
           <div class="relative">
             <input v-model="searchText" type="text" placeholder="输入流水号"
-              class="w-full bg-white/80 border border-slate-200 text-xs font-bold rounded-xl px-3 py-2 pr-8 focus:outline-none focus:border-blue-500 transition-all text-slate-800">
-            <i class="fa-solid fa-search text-[10px] text-slate-400 absolute right-2 top-2.5"></i>
+              class="input-compact w-full h-9 md:h-auto bg-white/80 border border-slate-200 text-xs font-bold rounded-xl px-3 py-2 pr-8 focus:outline-none focus:border-blue-500 transition-all text-slate-800 placeholder:text-[11px] md:placeholder:text-xs">
+            <i class="fa-solid fa-search text-[10px] text-slate-400 absolute right-2 top-1/2 -translate-y-1/2"></i>
           </div>
         </div>
       </div>

@@ -298,9 +298,9 @@ const recentTransactions = [
 <template>
   <div class="p-3 sm:p-6 space-y-4 sm:space-y-6">
     <!-- 顶部核心资产态势数据舱 -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
       <div v-for="stat in stats" :key="stat.label"
-        class="bg-white/45 backdrop-blur-2xl p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between tech-card">
+        class="bg-white/45 backdrop-blur-2xl p-3 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between tech-card">
         <div class="flex justify-between items-start">
           <div class="space-y-1">
             <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{{ stat.label }}</span>
@@ -310,11 +310,11 @@ const recentTransactions = [
               <span v-if="stat.suffix" class="text-xs font-black text-slate-900">{{ stat.suffix }}</span>
             </div>
           </div>
-          <div :class="['w-8 h-8 rounded-xl flex items-center justify-center', stat.iconBg, stat.iconColor]">
+          <div :class="['w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center', stat.iconBg, stat.iconColor]">
             <i :class="[stat.icon, 'text-xs']"></i>
           </div>
         </div>
-        <div :class="['text-[10px] font-bold flex items-center gap-1 mt-3', stat.tipColor]">
+        <div :class="['text-[10px] font-bold flex items-center gap-1 mt-2 sm:mt-3', stat.tipColor]">
           <i :class="stat.tipIcon"></i>
           <span>{{ stat.tipText }}</span>
         </div>
@@ -336,7 +336,7 @@ const recentTransactions = [
     </div>
 
     <!-- AI客流预测对比热力图 -->
-    <div class="bg-white/50 backdrop-blur-2xl p-5 rounded-3xl border border-slate-200/60 shadow-sm">
+    <div class="bg-white/50 backdrop-blur-2xl p-3 sm:p-5 rounded-3xl border border-slate-200/60 shadow-sm">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-2.5">
           <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white">
@@ -353,19 +353,19 @@ const recentTransactions = [
           <span class="flex items-center gap-0.5"><span class="w-2.5 h-2.5 rounded bg-rose-400"></span>繁忙</span>
         </div>
       </div>
-      <div class="overflow-x-auto">
-        <table class="w-full table-fixed text-center border-collapse min-w-[600px]">
+      <div class="flex justify-center sm:block sm:overflow-x-auto">
+        <table class="w-full max-w-[720px] table-fixed text-center border-collapse sm:max-w-none sm:min-w-[600px]">
           <thead>
             <tr>
-              <th class="w-40 text-[10px] font-black text-slate-500 text-left pl-2 pr-2 pb-2">网点</th>
-              <th v-for="h in hours" :key="h" class="text-[9px] font-bold text-slate-400 pb-2 px-1">{{ h }}</th>
+              <th class="w-20 sm:w-40 text-[10px] font-black text-slate-500 text-left pl-1 pr-1 sm:pl-2 sm:pr-2 pb-2">网点</th>
+              <th v-for="h in hours" :key="h" class="text-[9px] font-bold text-slate-400 pb-2 px-0.5 sm:px-1">{{ h }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="row in heatmapData" :key="row.branch">
-              <td class="text-[10px] font-bold text-slate-700 text-left pl-2 pr-2 py-1 whitespace-nowrap">{{ row.shortName }}</td>
+              <td class="text-[10px] font-bold text-slate-700 text-left leading-tight sm:leading-normal pl-1 pr-1 sm:pl-2 sm:pr-2 py-1 sm:whitespace-nowrap">{{ row.shortName }}</td>
               <td v-for="(cell, i) in row.cells" :key="i" class="py-0.5 px-0.5">
-                <div :class="[cell.bg, cell.textClass, 'rounded-md py-1.5 text-[9px] font-black']">{{ cell.val }}</div>
+                <div :class="[cell.bg, cell.textClass, 'w-full aspect-square flex items-center justify-center rounded text-[10px] font-black sm:block sm:aspect-auto sm:rounded-md sm:py-1.5 sm:text-[9px]']">{{ cell.val }}</div>
               </td>
             </tr>
           </tbody>
@@ -555,18 +555,18 @@ const recentTransactions = [
       <div class="space-y-2.5">
         <div v-for="tx in recentTransactions" :key="tx.sn"
           class="flex items-center justify-between p-3.5 bg-white/70 rounded-xl border border-slate-100 hover:border-cyan-500/20 transition-all">
-          <div class="flex items-center space-x-3.5">
-            <div :class="['w-9 h-9 rounded-lg flex items-center justify-center', tx.iconBg, tx.iconColor]">
+          <div class="flex items-center space-x-3.5 min-w-0">
+            <div :class="['w-9 h-9 shrink-0 rounded-lg flex items-center justify-center', tx.iconBg, tx.iconColor]">
               <i :class="[tx.icon, 'text-sm']"></i>
             </div>
-            <div>
-              <h5 class="text-xs font-bold text-slate-800">{{ tx.title }}</h5>
+            <div class="min-w-0">
+              <h5 class="text-xs font-bold text-slate-800 leading-snug">{{ tx.title }}</h5>
               <p class="text-[10px] font-mono font-bold text-slate-500 mt-0.5">流水号: {{ tx.sn }}</p>
             </div>
           </div>
-          <div class="text-right">
-            <span :class="['text-sm font-black', tx.amountColor]">{{ tx.amount }}</span>
-            <p :class="['text-[9px] font-bold px-1.5 py-0.5 rounded mt-0.5 inline-block', tx.tagBg, tx.tagColor, tx.tagBorder ? 'border ' + tx.tagBorder : '']">
+          <div class="text-right shrink-0 ml-2">
+            <span :class="['block text-sm font-black', tx.amountColor]">{{ tx.amount }}</span>
+            <p :class="['text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 inline-block', tx.tagBg, tx.tagColor, tx.tagBorder ? 'border ' + tx.tagBorder : '']">
               {{ tx.tag }}
             </p>
           </div>
