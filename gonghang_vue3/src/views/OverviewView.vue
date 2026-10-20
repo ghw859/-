@@ -108,7 +108,8 @@ function buildHeatmap() {
     let seed = 0
     for (let c = 0; c < b.name.length; c++) seed += b.name.charCodeAt(c)
 
-    const shortName = b.name.length > 8 ? b.name.substring(0, 7) + '…' : b.name
+    // 网点名称完整展示，列宽已按最长网点名（11 字）预留，避免省略号
+    const shortName = b.name
     const cells: HeatCell[] = []
 
     for (let k = 0; k < basePattern.length; k++) {
@@ -295,7 +296,7 @@ const recentTransactions = [
 </script>
 
 <template>
-  <div class="p-6 space-y-6">
+  <div class="p-3 sm:p-6 space-y-4 sm:space-y-6">
     <!-- 顶部核心资产态势数据舱 -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <div v-for="stat in stats" :key="stat.label"
@@ -346,23 +347,23 @@ const recentTransactions = [
             <p class="text-[10px] font-bold text-slate-400">6网点 × 8时段 · 基于历史30天数据预测</p>
           </div>
         </div>
-        <div class="flex items-center gap-2 text-[9px] font-bold text-slate-400">
+        <div class="hidden sm:flex shrink-0 items-center gap-2 text-[9px] font-bold text-slate-400">
           <span class="flex items-center gap-0.5"><span class="w-2.5 h-2.5 rounded bg-emerald-400"></span>畅通</span>
           <span class="flex items-center gap-0.5"><span class="w-2.5 h-2.5 rounded bg-amber-400"></span>适中</span>
           <span class="flex items-center gap-0.5"><span class="w-2.5 h-2.5 rounded bg-rose-400"></span>繁忙</span>
         </div>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full text-center border-collapse min-w-[600px]">
+        <table class="w-full table-fixed text-center border-collapse min-w-[600px]">
           <thead>
             <tr>
-              <th class="text-[10px] font-black text-slate-500 text-left pl-2 pb-2">网点</th>
+              <th class="w-40 text-[10px] font-black text-slate-500 text-left pl-2 pr-2 pb-2">网点</th>
               <th v-for="h in hours" :key="h" class="text-[9px] font-bold text-slate-400 pb-2 px-1">{{ h }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="row in heatmapData" :key="row.branch">
-              <td class="text-[10px] font-bold text-slate-700 text-left pl-2 py-1 whitespace-nowrap">{{ row.shortName }}</td>
+              <td class="text-[10px] font-bold text-slate-700 text-left pl-2 pr-2 py-1 whitespace-nowrap">{{ row.shortName }}</td>
               <td v-for="(cell, i) in row.cells" :key="i" class="py-0.5 px-0.5">
                 <div :class="[cell.bg, cell.textClass, 'rounded-md py-1.5 text-[9px] font-black']">{{ cell.val }}</div>
               </td>

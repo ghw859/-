@@ -649,7 +649,7 @@ function getSlotTimeClass(s: { capacity: number; isPast: boolean }, idx: number)
 
 <template>
   <div>
-  <div class="p-6 space-y-4" v-if="!bookingBranch">
+  <div class="p-3 md:p-6 space-y-4" v-if="!bookingBranch">
     <!-- 顶栏说明与状态指示 -->
     <div class="bg-white/50 backdrop-blur-2xl p-4 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
       <div class="flex items-center space-x-3">
@@ -777,8 +777,8 @@ function getSlotTimeClass(s: { capacity: number; isPast: boolean }, idx: number)
         <div class="flex justify-between items-start">
           <div class="space-y-1">
             <div class="flex items-center gap-2">
-              <h4 class="text-sm font-black text-slate-800">{{ b.name }}</h4>
-              <span :class="['text-[9px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1', getStatusBadge(b.status).cls]">
+              <h4 class="text-sm font-black text-slate-800 leading-snug">{{ b.name }}</h4>
+              <span :class="['shrink-0 whitespace-nowrap text-[9px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1', getStatusBadge(b.status).cls]">
                 <span :class="['w-1.5 h-1.5 rounded-full animate-pulse', getStatusBadge(b.status).dotCls]"></span>{{ getStatusBadge(b.status).text }}
               </span>
             </div>
@@ -1240,7 +1240,7 @@ function getSlotTimeClass(s: { capacity: number; isPast: boolean }, idx: number)
   </div>
 
   <!-- ================= 预约面板视图（复刻 view-appointment） ================= -->
-  <div v-else class="p-6 space-y-4">
+  <div v-else class="p-3 md:p-6 space-y-4">
     <!-- 顶部导航返回控制栏 -->
     <div class="bg-white/45 backdrop-blur-2xl p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
       <button @click="backToBranchList"

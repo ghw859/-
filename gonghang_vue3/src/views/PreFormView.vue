@@ -625,8 +625,8 @@ function switchBusinessFormLayout(type: BizType) {
 </script>
 
 <template>
-  <div class="p-6 space-y-4">
-    <div class="bg-white/50 backdrop-blur-2xl p-6 rounded-3xl border border-slate-200/60 shadow-sm space-y-6">
+  <div class="preform-view p-3 md:p-6 space-y-4">
+    <div class="bg-white/50 backdrop-blur-2xl p-3 sm:p-6 rounded-3xl border border-slate-200/60 shadow-sm space-y-6">
       <!-- 头部标题 -->
       <div class="flex items-center space-x-2 border-b border-slate-200/60 pb-3">
         <div class="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-600">
@@ -649,11 +649,11 @@ function switchBusinessFormLayout(type: BizType) {
               </div>
               <div class="text-left">
                 <span class="text-sm font-black text-slate-800">AI 智能文本解析</span>
-                <span class="text-[10px] text-slate-400 font-bold ml-1">大白话一键填单</span>
+                <span class="hidden sm:inline text-[10px] text-slate-400 font-bold ml-1">大白话一键填单</span>
               </div>
             </div>
-            <div class="flex items-center space-x-2">
-              <span class="text-sm text-slate-500 font-bold">{{ aiPanelOpen ? '点击收起' : '点击展开' }}</span>
+            <div class="flex items-center space-x-2 shrink-0">
+              <span class="hidden sm:inline text-sm text-slate-500 font-bold whitespace-nowrap">{{ aiPanelOpen ? '点击收起' : '点击展开' }}</span>
               <i :class="['fa-solid fa-chevron-down text-sm text-slate-400 transition-transform duration-300', aiPanelOpen ? 'rotate-180' : '']"></i>
             </div>
           </button>
@@ -695,12 +695,12 @@ function switchBusinessFormLayout(type: BizType) {
         <!-- 智能核对表单与手动修改区 -->
         <div class="bg-slate-950/5 rounded-2xl p-4 border border-slate-200/40 flex flex-col justify-between space-y-4">
           <div class="space-y-4">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-2">
               <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                 <i class="fa-solid fa-file-invoice-dollar text-blue-600 mr-1"></i> 智能业务核对与录入表：
               </span>
-              <div class="flex items-center space-x-2">
-                <span class="text-xs font-bold text-slate-400">表单模板:</span>
+              <div class="flex items-center space-x-2 shrink-0">
+                <span class="text-xs font-bold text-slate-400 whitespace-nowrap">表单模板:</span>
                 <select v-model="currentBizType" @change="switchBusinessFormLayout(currentBizType)"
                   class="bg-white border border-slate-200 rounded-lg text-sm font-bold px-2 py-1 focus:outline-none">
                   <option value="" disabled>请选择模板</option>
@@ -716,7 +716,7 @@ function switchBusinessFormLayout(type: BizType) {
               </div>
               <div v-else class="space-y-3 font-sans pt-1 text-sm">
                 <!-- 通用基础要素栏 -->
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <label class="text-xs font-bold text-slate-400 block mb-1">客户姓名 (AI自动)</label>
                     <input type="text" v-model="baseInfo.userName" placeholder="[未提取] 等待AI或下方手填"
@@ -727,7 +727,7 @@ function switchBusinessFormLayout(type: BizType) {
                     <input type="text" v-model="baseInfo.idCard" placeholder="[未提取] 等待AI或下方手填"
                       class="w-full bg-white border border-slate-200 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 transition-all shadow-xs text-slate-800">
                   </div>
-                  <div class="col-span-2">
+                  <div class="col-span-1 sm:col-span-2">
                     <label class="text-xs font-bold text-slate-400 block mb-1">手机号码 (AI自动)</label>
                     <input type="text" v-model="baseInfo.phone" placeholder="[未提取] 等待AI或下方手填"
                       class="w-full bg-white border border-slate-200 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 transition-all shadow-xs text-slate-800">
@@ -741,7 +741,7 @@ function switchBusinessFormLayout(type: BizType) {
                   <div :class="['text-[11px] font-black uppercase tracking-wider flex items-center', bizTheme.cash_reserve.iconColor]">
                     <i :class="[bizTheme.cash_reserve.icon, 'mr-1']"></i> {{ bizTheme.cash_reserve.title }}
                   </div>
-                  <div class="grid grid-cols-2 gap-2">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                       <label class="text-xs font-bold text-slate-400 block mb-1">预约取现金额 (元)</label>
                       <input type="text" v-model="cashReserveFields.amount" placeholder="请输入取现金额"
@@ -767,12 +767,12 @@ function switchBusinessFormLayout(type: BizType) {
                       <input type="text" v-model="cashReserveFields.time" placeholder="如：上午 10:00-11:00"
                         class="w-full bg-white border border-slate-200 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 transition-all shadow-xs text-slate-800">
                     </div>
-                    <div class="col-span-2">
+                    <div class="col-span-1 sm:col-span-2">
                       <label class="text-xs font-bold text-slate-400 block mb-1">预约提取网点</label>
                       <input type="text" v-model="cashReserveFields.branch" placeholder="请输入预约提取网点"
                         class="w-full bg-white border border-slate-200 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 transition-all shadow-xs text-slate-800">
                     </div>
-                    <div class="col-span-2">
+                    <div class="col-span-1 sm:col-span-2">
                       <label class="text-xs font-bold text-slate-400 block mb-1">现金用途申报</label>
                       <select v-model="cashReserveFields.purpose"
                         class="w-full bg-white border border-slate-200 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 transition-all shadow-xs text-slate-800">
@@ -885,7 +885,7 @@ function switchBusinessFormLayout(type: BizType) {
                   <div :class="['text-[11px] font-black uppercase tracking-wider flex items-center', bizTheme.corp_transfer.iconColor]">
                     <i :class="[bizTheme.corp_transfer.icon, 'mr-1']"></i> {{ bizTheme.corp_transfer.title }}
                   </div>
-                  <div class="grid grid-cols-2 gap-2">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                       <label class="text-xs font-bold text-slate-400 block mb-1">付款单位名称</label>
                       <input type="text" v-model="corpTransferFields.payerName" placeholder="请输入付款单位全称"
@@ -906,7 +906,7 @@ function switchBusinessFormLayout(type: BizType) {
                       <input type="text" v-model="corpTransferFields.recvCard" placeholder="请输入收款账号"
                         class="w-full bg-white border border-slate-200 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 transition-all shadow-xs text-slate-800">
                     </div>
-                    <div class="col-span-2">
+                    <div class="col-span-1 sm:col-span-2">
                       <label class="text-xs font-bold text-slate-400 block mb-1">收款银行名称</label>
                       <input type="text" v-model="corpTransferFields.recvBank" placeholder="请输入收款银行全称及支行"
                         class="w-full bg-white border border-slate-200 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 transition-all shadow-xs text-slate-800">
@@ -924,7 +924,7 @@ function switchBusinessFormLayout(type: BizType) {
                         <option value="yes">加急汇款</option>
                       </select>
                     </div>
-                    <div class="col-span-2">
+                    <div class="col-span-1 sm:col-span-2">
                       <label class="text-xs font-bold text-slate-400 block mb-1">资金用途</label>
                       <input type="text" v-model="corpTransferFields.purpose" placeholder="如：货款、服务费、保证金等"
                         class="w-full bg-white border border-slate-200 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 transition-all shadow-xs text-slate-800">
@@ -937,7 +937,7 @@ function switchBusinessFormLayout(type: BizType) {
                   <div :class="['text-[11px] font-black uppercase tracking-wider flex items-center', bizTheme.cash_deposit.iconColor]">
                     <i :class="[bizTheme.cash_deposit.icon, 'mr-1']"></i> {{ bizTheme.cash_deposit.title }}
                   </div>
-                  <div class="grid grid-cols-2 gap-2">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                       <label class="text-xs font-bold text-slate-400 block mb-1">缴款单位名称</label>
                       <input type="text" v-model="cashDepositFields.payerName" placeholder="请输入缴款单位全称"
@@ -962,12 +962,12 @@ function switchBusinessFormLayout(type: BizType) {
                         <option value="draft">银行汇票</option>
                       </select>
                     </div>
-                    <div class="col-span-2">
+                    <div class="col-span-1 sm:col-span-2">
                       <label class="text-xs font-bold text-slate-400 block mb-1">款项来源/用途说明</label>
                       <input type="text" v-model="cashDepositFields.purpose" placeholder="如：营业款、税款、保证金等"
                         class="w-full bg-white border border-slate-200 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 transition-all shadow-xs text-slate-800">
                     </div>
-                    <div class="col-span-2">
+                    <div class="col-span-1 sm:col-span-2">
                       <label class="text-xs font-bold text-slate-400 block mb-1">预约办理网点</label>
                       <input type="text" v-model="cashDepositFields.branch" placeholder="请输入预约办理网点"
                         class="w-full bg-white border border-slate-200 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 transition-all shadow-xs text-slate-800">
@@ -980,7 +980,7 @@ function switchBusinessFormLayout(type: BizType) {
                   <div :class="['text-[11px] font-black uppercase tracking-wider flex items-center', bizTheme.fx_exchange.iconColor]">
                     <i :class="[bizTheme.fx_exchange.icon, 'mr-1']"></i> {{ bizTheme.fx_exchange.title }}
                   </div>
-                  <div class="grid grid-cols-2 gap-2">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                       <label class="text-xs font-bold text-slate-400 block mb-1">兑换币种</label>
                       <select v-model="fxExchangeFields.fxCurrency"
@@ -1012,7 +1012,7 @@ function switchBusinessFormLayout(type: BizType) {
                       <input type="number" v-model="fxExchangeFields.amount" placeholder="自动估算或手动输入"
                         class="w-full bg-white border border-slate-200 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 transition-all shadow-xs text-slate-800">
                     </div>
-                    <div class="col-span-2">
+                    <div class="col-span-1 sm:col-span-2">
                       <label class="text-xs font-bold text-slate-400 block mb-1">用汇用途</label>
                       <select v-model="fxExchangeFields.purpose"
                         class="w-full bg-white border border-slate-200 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 transition-all shadow-xs text-slate-800">
@@ -1120,12 +1120,12 @@ function switchBusinessFormLayout(type: BizType) {
 
             <!-- 线下人工直填与核验卡片 -->
             <div class="bg-white/90 p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3 font-sans">
-              <div class="text-sm font-black text-slate-600 uppercase tracking-wider flex items-center justify-between border-b border-slate-100 pb-2">
-                <span><i class="fa-solid fa-pen-to-square text-cyan-600 mr-1"></i> 线下业务直填与证件核验（手动录入）</span>
-                <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-bold">待填状态</span>
+              <div class="text-sm font-black text-slate-600 uppercase tracking-wider flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                <span class="min-w-0"><i class="fa-solid fa-pen-to-square text-cyan-600 mr-1"></i> 线下业务直填与证件核验（手动录入）</span>
+                <span class="shrink-0 whitespace-nowrap text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-bold">待填状态</span>
               </div>
 
-              <div class="grid grid-cols-2 gap-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label class="text-xs font-bold text-slate-400 block mb-1">客户姓名 (手动)</label>
                   <input type="text" v-model="manualInfo.userName" placeholder="[未填写] 请录入姓名"
@@ -1136,7 +1136,7 @@ function switchBusinessFormLayout(type: BizType) {
                   <input type="text" v-model="manualInfo.idCard" placeholder="[未填写] 请录入18位证件号"
                     class="w-full bg-slate-50 border border-slate-200 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 focus:bg-white transition-all text-slate-800 placeholder:text-slate-300">
                 </div>
-                <div class="col-span-2">
+                <div class="col-span-1 sm:col-span-2">
                   <label class="text-xs font-bold text-slate-400 block mb-1">手机号码 (手动)</label>
                   <input type="text" v-model="manualInfo.phone" placeholder="[未填写] 请录入11位手机号"
                     class="w-full bg-slate-50 border border-slate-200 text-sm font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 focus:bg-white transition-all text-slate-800 placeholder:text-slate-300">

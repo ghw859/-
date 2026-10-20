@@ -113,8 +113,8 @@ function toggleElderly() {
         style="animation-delay: 7s; animation-duration: 15s;"></div>
     </div>
 
-    <!-- 灵枢Logo动画区 -->
-    <div class="absolute inset-0 w-full h-full z-10 flex items-center pointer-events-none">
+    <!-- 灵枢Logo动画区（移动端让位给注册卡片） -->
+    <div class="hidden lg:flex absolute inset-0 w-full h-full z-10 items-center pointer-events-none">
       <div class="w-full lg:w-[58%] h-full flex items-center justify-center relative">
         <div class="w-[520px] h-[520px] sm:w-[640px] sm:h-[640px] relative flex items-center justify-center">
           <div class="absolute w-[80%] h-[80%] rounded-full border-2 border-cyan-400/40 radar-wave"></div>
@@ -185,9 +185,9 @@ function toggleElderly() {
 
     <!-- 注册表单卡片 -->
     <div
-      class="absolute inset-0 w-full h-full z-20 flex items-center justify-center lg:justify-end lg:pr-24 xl:pr-44 p-4 pointer-events-none">
+      class="absolute inset-0 w-full h-full z-20 flex justify-center lg:justify-end lg:pr-24 xl:pr-44 p-4 overflow-y-auto pointer-events-none">
       <div
-        class="glass-card w-full max-w-[440px] p-8 sm:p-10 rounded-[2.5rem] pointer-events-auto relative bg-white/45 backdrop-blur-3xl overflow-hidden shadow-[0_40px_80px_rgba(15,23,42,0.05),_inset_0_1px_2px_rgba(255,255,255,0.8)] hover:shadow-[0_40px_90px_rgba(15,23,42,0.08)] transition-all duration-500 flex flex-col justify-between space-y-6">
+        class="glass-card my-auto w-full max-w-[440px] p-6 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] pointer-events-auto relative bg-white/45 backdrop-blur-3xl overflow-hidden shadow-[0_40px_80px_rgba(15,23,42,0.05),_inset_0_1px_2px_rgba(255,255,255,0.8)] hover:shadow-[0_40px_90px_rgba(15,23,42,0.08)] transition-all duration-500 flex flex-col justify-between space-y-6">
         <svg class="card-glow-border">
           <defs>
             <linearGradient id="card-streamer-gradient" x1="0%" y1="0%" x2="100%" y2="100%">

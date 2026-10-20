@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Sidebar from './Sidebar.vue'
 import Header from './Header.vue'
+import BottomNav from './BottomNav.vue'
 import AINavButton from '../ai/AINavButton.vue'
 import { useElderlyStore } from '../../stores/elderly'
 import { useAppointmentStore } from '../../stores/appointment'
@@ -38,11 +39,12 @@ watch(() => route.path, () => {
     <div class="aurora-bg absolute top-[40%] left-[30%] w-[35vw] h-[35vw] rounded-full bg-gradient-to-r from-indigo-200 to-purple-300" style="animation-delay: -8s;"></div>
   </div>
 
-  <div class="flex h-screen overflow-hidden relative z-10 p-4 gap-4 icbc-grid" :class="{ 'elderly-mode': elderly.isElderly }">
+  <div class="flex h-dvh overflow-hidden relative z-10 p-2 md:p-4 gap-2 md:gap-4 icbc-grid" :class="{ 'elderly-mode': elderly.isElderly }">
     <Sidebar />
-    <div class="flex-1 flex flex-col overflow-hidden">
+    <div class="flex-1 flex flex-col overflow-hidden min-w-0">
       <Header />
-      <main ref="mainRef" class="flex-1 overflow-y-auto">
+      <!-- 移动端底部导航悬浮，main 预留滚动内边距避免内容被遮挡 -->
+      <main ref="mainRef" class="flex-1 overflow-y-auto pb-20 md:pb-0">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
             <component :is="Component" />
@@ -51,6 +53,7 @@ watch(() => route.path, () => {
       </main>
     </div>
     <AINavButton v-if="!elderly.isElderly" />
+    <BottomNav />
   </div>
 </template>
 

@@ -169,18 +169,19 @@ function resetState() {
 
 <template>
   <!-- AI导航浮动按钮（保留原来一闪一闪的脉冲效果） -->
-  <div class="fixed bottom-6 right-6 z-50">
+  <!-- 移动端上移，避免被底部标签栏遮挡 -->
+  <div class="fixed bottom-20 right-3 md:bottom-6 md:right-6 z-40">
     <button @click="showModal = true; resetState()"
-      class="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl px-4 py-2 shadow-lg animate-pulse hover:shadow-xl transition-shadow cursor-pointer">
+      class="flex items-center gap-1.5 md:gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl px-3 md:px-4 py-2 shadow-lg animate-pulse hover:shadow-xl transition-shadow cursor-pointer">
       <i class="fa-solid fa-compass"></i>
-      <span class="font-bold text-sm">AI导航</span>
+      <span class="font-bold text-xs md:text-sm">AI导航</span>
     </button>
   </div>
 
   <!-- AI智能业务导航弹窗 -->
   <div v-if="showModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
     @click.self="showModal = false">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-fade-in">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[85dvh] flex flex-col overflow-hidden animate-fade-in">
       <!-- 头部 -->
       <div class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-4 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2.5 text-white">

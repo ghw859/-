@@ -205,9 +205,9 @@ function getStatusBadge(status: 'free' | 'moderate' | 'busy') {
 </script>
 
 <template>
-  <div class="p-6 space-y-4">
+  <div class="p-3 md:p-6 space-y-4">
     <!-- 顶部标题栏 -->
-    <div class="bg-white/50 backdrop-blur-2xl p-4 rounded-2xl border border-slate-200/60 flex items-center justify-between">
+    <div class="bg-white/50 backdrop-blur-2xl p-4 rounded-2xl border border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
       <div class="flex items-center space-x-3">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white">
           <i class="fa-solid fa-qrcode text-lg"></i>
