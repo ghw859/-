@@ -8,12 +8,14 @@ const { post, isLoggedIn, saveAuth, clearAuth } = require('./request')
  */
 function wxLogin(wxUser) {
   // 将微信用户信息发送给后端
-  // 后端可通过微信 nickName 作为 username 进行登录/注册
+  // 后端优先用 deviceId（设备稳定标识）派生账号，同一设备多次登录映射同一账号；
+  // 缺失时退化为 code/nickName 派生（code 每次都变，会导致每次登录都新建账号）。
   // code 可用于后端调用微信 jscode2session 获取 openid
   return post('/api/auth/wx-login', {
     nickName: wxUser.nickName,
     avatarUrl: wxUser.avatarUrl,
     code: wxUser.code || '',
+    deviceId: wxUser.deviceId || '',
   })
 }
 
