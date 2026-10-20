@@ -1,0 +1,20 @@
+# ============================================================
+# MySQL 字符集统一配置
+#
+# 背景：MySQL 官方镜像默认 character_set_client = latin1，
+# 导致 docker-entrypoint-initdb.d 执行 UTF-8 的 schema.sql 时
+# 中文种子数据被二次编码（如「北京分行」入库为「åŒ—äº¬åˆ†è¡Œ」）。
+#
+# 修复：服务端与客户端全部固定为 utf8mb4，
+# 保证初始化脚本、JDBC 连接、CLI 查询三处编码一致。
+# ============================================================
+
+[mysqld]
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+
+[client]
+default-character-set = utf8mb4
+
+[mysql]
+default-character-set = utf8mb4

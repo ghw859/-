@@ -1,7 +1,8 @@
-# ICBC · 灵枢 AI 服务（Day 10）
+# ICBC · 灵枢 AI 服务
 # 构建：docker build -t lingmou-ai .
-# 运行：docker run -p 8000:8000 -e REDIS_URL=redis://redis:6379/0 -e DASHSCOPE_API_KEY=sk-xxx lingmou-ai
-FROM python:3.10-slim
+# 运行：docker run -p 18092:8000 -e REDIS_URL=redis://redis:6379/0 -e DASHSCOPE_API_KEY=sk-xxx lingmou-ai
+# 基础镜像：python 3.11-slim（全部依赖均兼容 3.11，且为本地镜像仓库可用版本）
+FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

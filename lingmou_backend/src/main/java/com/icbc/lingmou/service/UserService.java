@@ -36,4 +36,9 @@ public interface UserService {
      * 判断手机号是否存在
      */
     boolean existsByPhone(String phone);
+
+    /**
+     * 更新用户资料（昵称/头像等）
+     */
+    boolean updateProfile(User user);
 }

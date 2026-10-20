@@ -1,0 +1,178 @@
+<!-- pages/overview/overview.wxml -->
+<view class="overview-page {{elderlyMode ? 'elderly-mode' : ''}}">
+
+  <!-- 顶部欢迎栏 -->
+  <view class="welcome-bar">
+    <view class="welcome-info">
+      <view class="welcome-title">灵枢智慧银行</view>
+      <view class="welcome-sub">AI数字人大堂经理 · 全程智能陪伴</view>
+    </view>
+    <view class="welcome-badge">
+      <text class="badge-text">信誉 {{stats.creditScore}}</text>
+    </view>
+  </view>
+
+  <!-- 4 个统计卡片 -->
+  <view class="stats-grid">
+    <view class="stat-card stat-blue">
+      <view class="stat-value">{{stats.totalPreForms}}</view>
+      <view class="stat-label">预填单</view>
+    </view>
+    <view class="stat-card stat-purple">
+      <view class="stat-value">{{stats.totalAppointments}}</view>
+      <view class="stat-label">预约数</view>
+    </view>
+    <view class="stat-card stat-green">
+      <view class="stat-value">{{stats.completedCount}}</view>
+      <view class="stat-label">已完成</view>
+    </view>
+    <view class="stat-card stat-amber">
+      <view class="stat-value">{{stats.creditScore}}</view>
+      <view class="stat-label">信誉分</view>
+    </view>
+  </view>
+
+  <!-- AI 智能客流热力图 -->
+  <view class="card">
+    <view class="section-title">
+      <view class="title-icon heatmap-icon"></view>
+      <text>AI 智能客流热力图</text>
+    </view>
+    <view class="section-subtitle mb-2">基于实时客流与历史趋势预测 · 红色=繁忙 / 绿色=畅通</view>
+
+    <view class="heatmap-container">
+      <!-- 表头：时间 -->
+      <view class="heatmap-header">
+        <view class="heatmap-corner"></view>
+        <view class="heatmap-time" wx:for="{{timeLabels}}" wx:key="*this">{{item}}</view>
+      </view>
+      <!-- 每行：网点 -->
+      <view class="heatmap-row" wx:for="{{heatmap}}" wx:for-item="row" wx:for-index="rIdx" wx:key="rIdx">
+        <view class="heatmap-label">{{branchLabels[rIdx]}}</view>
+        <view
+          class="heatmap-cell"
+          wx:for="{{row}}"
+          wx:for-item="cell"
+          wx:for-index="cIdx"
+          wx:key="cIdx"
+          style="background-color: {{cell >= 80 ? '#dc2626' : cell >= 60 ? '#f97316' : cell >= 40 ? '#f59e0b' : cell >= 20 ? '#84cc16' : '#22c55e'}}; opacity: {{0.3 + cell * 0.007}};"
+        >
+          <text class="heatmap-value">{{cell}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="heatmap-legend">
+      <view class="legend-item"><view class="legend-color" style="background:#22c55e"></view><text>畅通</text></view>
+      <view class="legend-item"><view class="legend-color" style="background:#f59e0b"></view><text>适中</text></view>
+      <view class="legend-item"><view class="legend-color" style="background:#dc2626"></view><text>繁忙</text></view>
+    </view>
+  </view>
+
+  <!-- AI 诊断 -->
+  <view class="card diagnosis-card">
+    <view class="section-title">
+      <view class="title-icon ai-icon"></view>
+      <text>AI 智能诊断</text>
+      <view class="ai-badge"><text>端侧推理</text></view>
+    </view>
+    <view class="diagnosis-content">
+      <text class="diagnosis-text {{diagnosisLoading ? 'typing-cursor' : ''}}">{{diagnosisText || '正在为您分析业务画像...'}}{{diagnosisLoading ? '▋' : ''}}</text>
+    </view>
+    <view class="diagnosis-actions">
+      <view class="diagnosis-btn" bindtap="goToAI">
+        <text>与AI大堂经理对话</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 饼图：预约状态分布 -->
+  <view class="card">
+    <view class="section-title">
+      <view class="title-icon pie-icon"></view>
+      <text>预约状态分布</text>
+    </view>
+    <view class="chart-container">
+      <view class="pie-list">
+        <view class="pie-item" wx:for="{{pieData}}" wx:key="label">
+          <view class="pie-dot" style="background: {{item.color}}"></view>
+          <text class="pie-label">{{item.label}}</text>
+          <text class="pie-value">{{item.value}} 笔</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 柱状图：业务类型分布 -->
+  <view class="card">
+    <view class="section-title">
+      <view class="title-icon bar-icon"></view>
+      <text>业务类型分布</text>
+    </view>
+    <view class="bar-chart">
+      <view class="bar-item" wx:for="{{barData}}" wx:key="label">
+        <view class="bar-label">{{item.label}}</view>
+        <view class="bar-track">
+          <view class="bar-fill" style="width: {{item.value > 0 ? (item.value * 20 + 10) : 0}}%; background: {{item.color}};"></view>
+        </view>
+        <view class="bar-value">{{item.value}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 雷达图：服务质量评估 -->
+  <view class="card">
+    <view class="section-title">
+      <view class="title-icon radar-icon"></view>
+      <text>服务质量评估</text>
+    </view>
+    <view class="radar-chart">
+      <view class="radar-item" wx:for="{{radarData}}" wx:key="label">
+        <view class="radar-label">{{item.label}}</view>
+        <view class="radar-track">
+          <view class="radar-fill" style="width: {{item.value}}%;"></view>
+        </view>
+        <view class="radar-value">{{item.value}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 最近交易记录 -->
+  <view class="card" wx:if="{{recentTransactions.length > 0}}">
+    <view class="section-title">
+      <view class="title-icon history-icon"></view>
+      <text>最近预约</text>
+    </view>
+    <view class="recent-list">
+      <view class="recent-item" wx:for="{{recentTransactions}}" wx:key="id">
+        <view class="recent-info">
+          <text class="recent-voucher">{{item.voucherNum || ('ICBC-' + item.id)}}</text>
+          <text class="recent-time">{{item.createdAt}}</text>
+        </view>
+        <view class="badge {{item.status === 'completed' ? 'badge-completed' : item.status === 'canceled' || item.status === 'expired' ? 'badge-canceled' : 'badge-active'}}">
+          {{item.status === 'completed' ? '已完成' : item.status === 'canceled' ? '已取消' : item.status === 'expired' ? '已失效' : item.status === 'virtual' ? '虚拟号' : '进行中'}}
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 快捷入口 -->
+  <view class="quick-actions">
+    <view class="quick-item" bindtap="goToNavigation">
+      <view class="quick-icon nav-icon"></view>
+      <text>预约排队</text>
+    </view>
+    <view class="quick-item" bindtap="goToPreForm">
+      <view class="quick-icon form-icon"></view>
+      <text>预填单</text>
+    </view>
+    <view class="quick-item" bindtap="goToProgress">
+      <view class="quick-icon progress-icon"></view>
+      <text>进度追踪</text>
+    </view>
+    <view class="quick-item" bindtap="goToAI">
+      <view class="quick-icon chat-icon"></view>
+      <text>AI助手</text>
+    </view>
+  </view>
+
+</view>

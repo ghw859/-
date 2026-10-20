@@ -1,0 +1,253 @@
+/* app.wxss - 灵枢智慧银行全局样式 */
+
+/* ============ 全局变量 ============ */
+page {
+  --color-primary: #1a56db;
+  --color-primary-light: #3b82f6;
+  --color-primary-dark: #1e40af;
+  --color-accent: #06b6d4;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-bg: #f0f4f8;
+  --color-card: #ffffff;
+  --color-text: #1e293b;
+  --color-text-secondary: #64748b;
+  --color-text-light: #94a3b8;
+  --color-border: #e2e8f0;
+  --radius-sm: 8rpx;
+  --radius-md: 16rpx;
+  --radius-lg: 24rpx;
+  --radius-xl: 32rpx;
+
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+  font-size: 28rpx;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ============ 通用卡片 ============ */
+.card {
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.card-blur {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20rpx);
+  border: 1rpx solid rgba(226, 232, 240, 0.6);
+}
+
+/* ============ 通用标题 ============ */
+.section-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 20rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.section-subtitle {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+/* ============ 按钮系统 ============ */
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 24rpx 48rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+}
+
+.btn-primary::after {
+  border: none;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--color-primary);
+  border: 2rpx solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  padding: 22rpx 48rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  text-align: center;
+}
+
+.btn-outline::after {
+  border: none;
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 24rpx 48rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  text-align: center;
+}
+
+.btn-danger::after {
+  border: none;
+}
+
+/* ============ 状态徽章 ============ */
+.badge {
+  display: inline-block;
+  padding: 6rpx 20rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.badge-free {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.badge-moderate {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.badge-busy {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.badge-virtual {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.badge-active {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.badge-completed {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.badge-canceled {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+.badge-expired {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* ============ 输入框 ============ */
+.input-field {
+  background: #f8fafc;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24rpx 28rpx;
+  font-size: 30rpx;
+  color: var(--color-text);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input-field:focus {
+  border-color: var(--color-primary);
+}
+
+/* ============ 网格布局 ============ */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24rpx;
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16rpx;
+}
+
+/* ============ 文字工具类 ============ */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-primary { color: var(--color-primary); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-danger { color: var(--color-danger); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-light { color: var(--color-text-light); }
+.text-sm { font-size: 24rpx; }
+.text-xs { font-size: 20rpx; }
+.text-lg { font-size: 34rpx; }
+.text-xl { font-size: 40rpx; }
+.text-2xl { font-size: 48rpx; }
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.font-medium { font-weight: 500; }
+
+/* ============ 间距工具类 ============ */
+.mt-1 { margin-top: 8rpx; }
+.mt-2 { margin-top: 16rpx; }
+.mt-3 { margin-top: 24rpx; }
+.mt-4 { margin-top: 32rpx; }
+.mb-1 { margin-bottom: 8rpx; }
+.mb-2 { margin-bottom: 16rpx; }
+.mb-3 { margin-bottom: 24rpx; }
+.mb-4 { margin-bottom: 32rpx; }
+.p-3 { padding: 24rpx; }
+.p-4 { padding: 32rpx; }
+.px-3 { padding-left: 24rpx; padding-right: 24rpx; }
+.py-3 { padding-top: 24rpx; padding-bottom: 24rpx; }
+.gap-2 { gap: 16rpx; }
+.gap-3 { gap: 24rpx; }
+
+/* ============ flex 工具类 ============ */
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.flex-1 { flex: 1; }
+.flex-wrap { flex-wrap: wrap; }
+
+/* ============ 老年模式 ============ */
+.elderly-mode {
+  font-size: 34rpx;
+}
+
+.elderly-mode .section-title {
+  font-size: 38rpx;
+}
+
+.elderly-mode .btn-primary,
+.elderly-mode .btn-outline,
+.elderly-mode .btn-danger {
+  font-size: 36rpx;
+  padding: 32rpx 48rpx;
+}
+
+.elderly-mode .input-field {
+  font-size: 36rpx;
+  padding: 32rpx 28rpx;
+}

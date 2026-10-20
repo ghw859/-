@@ -20,6 +20,10 @@
 
     <properties>
         <java.version>21</java.version>
+        <!-- 源码与资源统一 UTF-8：避免在 GBK 环境下编译时中文字面量被错误转码 -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
         <mybatis-plus.version>3.5.5</mybatis-plus.version>
         <jjwt.version>0.12.5</jjwt.version>
         <springdoc.version>2.3.0</springdoc.version>

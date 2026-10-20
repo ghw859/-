@@ -1072,6 +1072,8 @@ function getSlotTimeClass(s: { capacity: number; isPast: boolean }, idx: number)
                   class="text-[9px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full border border-slate-200">已失效</span>
                 <span v-else-if="a.status === 'completed'"
                   class="text-[9px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full border border-slate-200">已完成</span>
+                <span v-else-if="a.status === 'canceled'"
+                  class="text-[9px] font-bold bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full border border-slate-200">已取消</span>
                 <span v-else
                   class="text-[9px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full border border-slate-200 flex items-center gap-1">
                   <i class="fa-solid fa-clock text-[8px]"></i>待激活
@@ -1195,7 +1197,8 @@ function getSlotTimeClass(s: { capacity: number; isPast: boolean }, idx: number)
                 'bg-slate-100 text-slate-500'">
               {{ detailAppt.status === 'active' ? '已激活' :
                 detailAppt.status === 'expired' ? '已失效' :
-                detailAppt.status === 'completed' ? '已完成' : '待激活' }}
+                detailAppt.status === 'completed' ? '已完成' :
+                detailAppt.status === 'canceled' ? '已取消' : '待激活' }}
             </span>
           </div>
 

@@ -4,6 +4,10 @@
 -- 创建时间: 2026-09-08
 -- ============================================
 
+-- 显式声明会话字符集：MySQL 官方镜像的客户端默认 latin1，
+-- 若不声明，UTF-8 的中文种子数据会被二次编码入库（乱码）。
+SET NAMES utf8mb4;
+
 -- 创建数据库（如果不存在）
 CREATE DATABASE IF NOT EXISTS lingmou DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 

@@ -1,0 +1,158 @@
+<!-- pages/progress/progress.wxml -->
+<view class="progress-page {{elderlyMode ? 'elderly-mode' : ''}}">
+
+  <!-- 标题栏 -->
+  <view class="page-header">
+    <view class="header-icon progress-header-icon"></view>
+    <view>
+      <view class="header-title">办理进度实时追踪</view>
+      <view class="header-sub">多预约管理 · 全程状态可视 · 叫号不等待</view>
+    </view>
+    <view class="refresh-btn" bindtap="refresh">
+      <text>{{refreshing ? '刷新中...' : '刷新'}}</text>
+    </view>
+  </view>
+
+  <!-- 预约选择条 -->
+  <view class="appt-selector" wx:if="{{appointments.length > 0}}">
+    <scroll-view scroll-x class="appt-scroll">
+      <view
+        class="appt-chip {{selectedVoucher === item.voucherNum ? 'appt-chip-active' : ''}}"
+        wx:for="{{appointments}}"
+        wx:key="id"
+        bindtap="selectAppt"
+        data-voucher="{{item.voucherNum}}"
+      >
+        <text class="appt-chip-num">{{item.voucherDisplay}}</text>
+        <view class="appt-chip-status">
+          <text>{{item.statusText}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="card empty-card" wx:if="{{appointments.length === 0 && !loading}}">
+    <view class="empty-icon">!</view>
+    <view class="empty-title">暂无预约</view>
+    <view class="empty-desc">点击下方按钮去预约取号</view>
+    <button class="btn-primary" bindtap="goToBooking">
+      <text>去预约取号</text>
+    </button>
+  </view>
+
+  <!-- 进度卡片 -->
+  <block wx:if="{{appointments.length > 0 && currentAppt}}">
+
+    <!-- 5步进度条 -->
+    <view class="card">
+      <view class="section-title">
+        <view class="title-icon step-icon"></view>
+        <text>办理进度</text>
+      </view>
+
+      <!-- 步骤条 -->
+      <view class="step-bar">
+        <view class="step-line"></view>
+        <view class="step-track">
+          <view class="step-line-active" style="width: {{progressPercent}}%;"></view>
+        </view>
+        <view class="step-nodes">
+          <view class="step-node {{currentAppt.step >= idx + 1 ? 'node-active' : ''}}" wx:for="{{steps}}" wx:for-index="idx" wx:key="name">
+            <view class="node-circle">
+              <text>{{idx + 1}}</text>
+            </view>
+            <text class="node-label">{{item.name}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 状态信息 -->
+      <view class="status-info">
+        <view class="status-main">
+          <text class="status-title-text">{{currentAppt.statusLower === 'expired' ? '已失效' : currentAppt.statusLower === 'canceled' ? '已取消' : currentAppt.statusLower === 'virtual' ? '虚拟号未激活' : currentAppt.statusLower === 'completed' ? '已完成' : currentAppt.step === 1 ? '已取号' : currentAppt.step === 2 ? '排队中' : currentAppt.step === 3 ? '已叫号' : currentAppt.step === 4 ? '办理中' : '已完成'}}</text>
+        </view>
+        <view class="status-sub">
+          <text wx:if="{{currentAppt.statusLower === 'expired'}}">号码自动失效，信誉分已扣除</text>
+          <text wx:elif="{{currentAppt.statusLower === 'canceled'}}">预约已取消，如需办理请重新取号</text>
+          <text wx:elif="{{currentAppt.statusLower === 'virtual'}}">请到店扫码激活后享有优先叫号</text>
+          <text wx:elif="{{currentAppt.step === 2}}">前方还有 {{currentAppt.aheadCount || 0}} 人</text>
+          <text wx:elif="{{currentAppt.step === 3}}">请前往 {{currentAppt.window || '待分配'}} 窗口</text>
+          <text wx:elif="{{currentAppt.step === 4}}">{{currentAppt.window || ''}} 办理中</text>
+          <text wx:elif="{{currentAppt.step === 5}}">感谢您的耐心</text>
+          <text wx:else>已生成排队号</text>
+        </view>
+      </view>
+
+      <!-- 凭证信息 -->
+      <view class="voucher-detail">
+        <view class="voucher-row">
+          <text class="voucher-label">凭证号</text>
+          <text class="voucher-value">{{currentAppt.voucherNum}}</text>
+        </view>
+        <view class="voucher-row" wx:if="{{currentAppt.window}}">
+          <text class="voucher-label">窗口</text>
+          <text class="voucher-value">{{currentAppt.window}}</text>
+        </view>
+        <view class="voucher-row" wx:if="{{currentAppt.appointmentDate}}">
+          <text class="voucher-label">预约时间</text>
+          <text class="voucher-value">{{currentAppt.appointmentDate}} {{currentAppt.timeSlot || ''}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 虚拟号激活面板 -->
+    <view class="card action-card" wx:if="{{currentAppt.statusLower === 'virtual'}}">
+      <view class="action-title">虚拟号待激活</view>
+      <view class="action-desc">请到店扫描二维码激活后享有优先叫号，或点击下方模拟激活</view>
+      <button class="btn-primary" bindtap="activateFromProgress">
+        <text>模拟激活</text>
+      </button>
+    </view>
+
+    <!-- 推进面板 -->
+    <view class="card action-card" wx:if="{{currentAppt.statusLower === 'active' && currentAppt.step < 5}}">
+      <view class="action-title">当前进度</view>
+      <view class="action-desc">
+        <text>步骤 {{currentAppt.step}}/5 · {{currentAppt.step === 2 ? '可模拟叫号' : currentAppt.step === 3 ? '可开始办理' : currentAppt.step === 4 ? '可办理完成' : ''}}</text>
+      </view>
+      <button class="btn-primary" bindtap="stepForward">
+        <text>{{currentAppt.step === 2 ? '模拟叫号' : currentAppt.step === 3 ? '开始办理' : currentAppt.step === 4 ? '办理完成' : '下一步'}}</text>
+      </button>
+    </view>
+
+    <!-- 已失效面板 -->
+    <view class="card expired-card" wx:if="{{currentAppt.statusLower === 'expired'}}">
+      <view class="expired-title">预约已失效</view>
+      <view class="expired-desc">未按时到店激活，号码已自动失效，信誉分已扣除10分</view>
+    </view>
+
+    <!-- 评价面板 -->
+    <view class="card review-card" wx:if="{{currentAppt.statusLower === 'completed' && !reviewSubmitted}}">
+      <view class="review-title">评价服务</view>
+      <view class="review-stars">
+        <view class="star {{reviewRating >= s ? 'star-active' : ''}}" wx:for="{{[1,2,3,4,5]}}" wx:for-item="s" wx:key="*this" bindtap="setRating" data-rating="{{s}}">
+          <text>{{reviewRating >= s ? '★' : '☆'}}</text>
+        </view>
+      </view>
+      <button class="btn-primary" bindtap="submitReview" disabled="{{reviewRating === 0}}">
+        <text>提交评价</text>
+      </button>
+    </view>
+
+    <!-- 已评价 -->
+    <view class="card" wx:if="{{reviewSubmitted}}">
+      <view class="review-done">
+        <text>感谢您的评价 {{reviewRating}}★</text>
+      </view>
+    </view>
+
+    <!-- 操作区 -->
+    <view class="action-bar" wx:if="{{currentAppt.statusLower !== 'completed' && currentAppt.statusLower !== 'expired' && currentAppt.statusLower !== 'canceled'}}">
+      <button class="btn-danger cancel-btn" bindtap="cancelAppt">取消预约</button>
+      <button class="btn-outline refresh-one-btn" bindtap="refreshOne">刷新凭证</button>
+    </view>
+
+  </block>
+
+</view>

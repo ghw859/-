@@ -1,6 +1,7 @@
 package com.icbc.lingmou.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.icbc.lingmou.entity.User;
 import com.icbc.lingmou.mapper.UserMapper;
 import com.icbc.lingmou.service.UserService;
@@ -72,5 +73,32 @@ public class UserServiceImpl implements UserService {
     public boolean existsByPhone(String phone) {
         return userMapper.selectCount(
                 new LambdaQueryWrapper<User>().eq(User::getPhone, phone)) > 0;
+    }
+
+    @Override
+    public boolean updateProfile(User user) {
+        if (user == null || user.getId() == null) {
+            return false;
+        }
+        LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<User>()
+                .eq(User::getId, user.getId());
+        if (user.getRealName() != null) {
+            wrapper.set(User::getRealName, user.getRealName());
+        }
+        if (user.getAvatar() != null) {
+            wrapper.set(User::getAvatar, user.getAvatar());
+        }
+        if (user.getPhone() != null) {
+            wrapper.set(User::getPhone, user.getPhone());
+        }
+        if (user.getIdCard() != null) {
+            wrapper.set(User::getIdCard, user.getIdCard());
+        }
+        // 至少更新了昵称/头像/手机/身份证之一才执行，避免无效UPDATE
+        boolean noFieldToUpdate = wrapper.getSqlSet().isEmpty();
+        if (noFieldToUpdate) {
+            return false;
+        }
+        return userMapper.update(null, wrapper) > 0;
     }
 }

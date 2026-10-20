@@ -1,5 +1,11 @@
-# 构建产物（容器内由 Maven 重新打包）
-target/
+# 镜像需要已构建的 jar（target/lingmou-1.0.0.jar），故不整体忽略 target/
+# 仅排除 Maven 中间产物，减小构建上下文
+target/classes/
+target/test-classes/
+target/maven-status/
+target/generated-sources/
+target/generated-test-sources/
+target/surefire-reports/
 # 上传文件由 volume 挂载，不进镜像
 uploads/
 # 版本与工具

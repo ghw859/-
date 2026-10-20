@@ -1,6 +1,5 @@
-# 依赖与构建产物（容器内重新安装/打包）
+# 镜像只消费构建产物 dist/，其余源码不进入上下文
 node_modules/
-dist/
 # 版本与工具
 .git/
 .gitignore

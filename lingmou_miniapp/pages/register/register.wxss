@@ -1,0 +1,44 @@
+/* pages/register/register.wxss */
+.register-page {
+  min-height: 100vh;
+  padding: 40rpx;
+  background: linear-gradient(180deg, #1a56db 0%, #3b82f6 30%, #f0f4f8 60%);
+}
+
+.form-card {
+  background: #ffffff;
+  border-radius: 32rpx;
+  padding: 48rpx 40rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
+}
+
+.form-title {
+  font-size: 38rpx;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 40rpx;
+}
+
+.form-item {
+  margin-bottom: 28rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 12rpx;
+}
+
+.register-btn {
+  width: 100% !important;
+  margin-top: 20rpx;
+  margin-bottom: 32rpx;
+}
+
+.back-link {
+  text-align: center;
+  font-size: 28rpx;
+  color: #64748b;
+}

@@ -1,0 +1,97 @@
+<!-- pages/login/login.wxml -->
+<view class="login-page {{elderlyMode ? 'elderly-mode' : ''}}">
+  <!-- 顶部品牌区 -->
+  <view class="brand-section">
+    <view class="brand-logo">
+      <text class="brand-icon">ICBC</text>
+    </view>
+    <view class="brand-title">灵枢 · 智慧银行</view>
+    <view class="brand-subtitle">AI数字人大堂经理 · 全程智能陪伴</view>
+  </view>
+
+  <!-- 微信登录卡片 -->
+  <view class="form-card">
+    <view class="form-title">欢迎登录</view>
+    <view class="form-desc">使用微信身份一键登录，无需注册即可享受全部智慧银行服务</view>
+
+    <!-- 用户信息（已选头像昵称后显示） -->
+    <view class="wx-user-preview" wx:if="{{avatarUrl || nickName}}">
+      <image wx:if="{{avatarUrl}}" class="wx-avatar" src="{{avatarUrl}}" mode="aspectFill" />
+      <view wx:else class="wx-avatar wx-avatar-placeholder">
+        <text>W</text>
+      </view>
+      <view class="wx-name">{{nickName || '微信用户'}}</view>
+    </view>
+
+    <!-- 微信确认登录按钮 -->
+    <button class="btn-primary wx-login-btn" bindtap="handleWxLogin" loading="{{loading}}" disabled="{{loading || !ready}}">
+      <view class="wx-btn-content">
+        <view class="wx-icon">
+          <text class="wx-icon-text">W</text>
+        </view>
+        <text>{{loading ? '登录中...' : '微信确认登录'}}</text>
+      </view>
+    </button>
+
+    <!-- 完善头像昵称（可选，官方 chooseAvatar / nickname 组件） -->
+    <view class="profile-toggle" bindtap="toggleProfile">
+      <text>{{profileOpen ? '收起资料设置 ▴' : '设置头像与昵称（可选） ▾'}}</text>
+    </view>
+
+    <view class="profile-panel" wx:if="{{profileOpen}}">
+      <view class="profile-item">
+        <text class="profile-label">头像</text>
+        <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+          <image wx:if="{{avatarUrl}}" class="avatar-preview" src="{{avatarUrl}}" mode="aspectFill" />
+          <text wx:else class="avatar-tip">点击选择</text>
+        </button>
+      </view>
+      <view class="profile-item">
+        <text class="profile-label">昵称</text>
+        <input
+          class="input-field"
+          type="nickname"
+          placeholder="点击使用微信昵称"
+          value="{{nickName}}"
+          bindinput="onNickNameInput"
+          bindblur="onNickNameInput"
+          maxlength="20"
+        />
+      </view>
+    </view>
+
+    <!-- 分隔线 -->
+    <view class="divider">
+      <view class="divider-line"></view>
+      <text class="divider-text">安全登录</text>
+      <view class="divider-line"></view>
+    </view>
+
+    <!-- 安全提示 -->
+    <view class="security-tips">
+      <view class="tip-item">
+        <text class="tip-icon">✓</text>
+        <text>微信安全认证</text>
+      </view>
+      <view class="tip-item">
+        <text class="tip-icon">✓</text>
+        <text>金融级数据加密</text>
+      </view>
+      <view class="tip-item">
+        <text class="tip-icon">✓</text>
+        <text>区块链存证保护</text>
+      </view>
+    </view>
+
+    <!-- 注册入口（保留，但弱化展示） -->
+    <view class="register-link" bindtap="goToRegister">
+      <text>已有账号体系？</text>
+      <text class="text-primary font-semibold">账号注册</text>
+    </view>
+  </view>
+
+  <!-- 老年模式切换 -->
+  <view class="elderly-toggle" bindtap="toggleElderlyMode">
+    <text class="text-secondary">{{elderlyMode ? '已开启大字模式' : '开启大字模式（适老化）'}}</text>
+  </view>
+</view>

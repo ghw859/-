@@ -1,22 +1,14 @@
-# ICBC · 灵枢前端（Day 10，compose 编排配套）
-# 构建：docker build -t lingmou-frontend .
-# 多阶段构建：阶段1 Node 打包 dist，阶段2 nginx 托管静态资源并反向代理后端
-# node:24：package.json engines 要求 ^22.18.0 || >=24.12.0，node:20 不满足（首次实跑踩坑）
-FROM node:24-alpine AS build
+# ICBC · 灵枢前端镜像（nginx 托管 Vue3 构建产物）
+#
+# 构建方式：产物预构建 + nginx 托管
+#   1) 在宿主机（或 CI）执行：npm ci --legacy-peer-deps && npm run build
+#   2) docker build -t lingmou-frontend:1.0.0 .
+#
+# 说明：原多阶段方案需要 node:24-alpine 基础镜像。当前环境镜像仓库
+# 无法稳定拉取 node 系列镜像，故改为消费已构建的 dist/ 产物，
+# 运行镜像与多阶段方案完全一致（nginx:1.27-alpine），不影响运行行为。
+# 若后续可正常拉取 node 镜像，可恢复多阶段构建。
 
-WORKDIR /app
-
-# 先拷 package 文件单独装依赖，利用 Docker 层缓存
-COPY package.json package-lock.json ./
-# --legacy-peer-deps：vite8/plugin-vue6/eslint10/ts6 的 peer 组合超出 npm ci 默认严格校验，
-# 与本地 node22.18+npm10.9 实际安装行为对齐；锁文件未动，产物一致
-RUN npm ci --registry=https://registry.npmmirror.com --legacy-peer-deps
-
-COPY . .
-# build = type-check + vite build（Day10 E2E 已验证 exit 0）
-RUN npm run build
-
-# ---- 运行阶段 ----
 FROM nginx:1.27-alpine
 
 ENV TZ=Asia/Shanghai
@@ -24,8 +16,12 @@ ENV TZ=Asia/Shanghai
 # 反向代理配置：/api/ai → Python 8000（含 WebSocket），其余 /api → Java 8080
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-COPY --from=build /app/dist /usr/share/nginx/html
+# Vue3 构建产物
+COPY dist /usr/share/nginx/html
 
 EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget -q --spider http://127.0.0.1/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]

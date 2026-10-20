@@ -1,0 +1,96 @@
+<!-- pages/ai-assistant/ai-assistant.wxml -->
+<view class="chat-page {{elderlyMode ? 'elderly-mode' : ''}}">
+
+  <!-- 头部 -->
+  <view class="chat-header">
+    <view class="header-left">
+      <view class="ai-avatar">AI</view>
+      <view class="header-info">
+        <text class="header-title">"灵枢" AI数字人大堂经理</text>
+        <text class="header-sub">智能引导 · 网点推荐 · 业务咨询 · 全程陪伴</text>
+      </view>
+    </view>
+    <view class="header-action" bindtap="clearChat">
+      <text>清空</text>
+    </view>
+  </view>
+
+  <!-- 隐私提示 -->
+  <view class="privacy-bar">
+    <text>隐私保护：数据未离端</text>
+  </view>
+
+  <!-- 消息列表 -->
+  <scroll-view
+    class="msg-list"
+    scroll-y
+    scroll-into-view="{{scrollIntoView}}"
+    scroll-with-animation
+    enhanced
+    show-scrollbar="{{false}}"
+  >
+    <view class="msg-item {{msg.role === 'user' ? 'msg-user' : 'msg-ai'}}" wx:for="{{messages}}" wx:for-item="msg" wx:key="id">
+
+      <!-- AI 头像 -->
+      <view class="msg-avatar" wx:if="{{msg.role === 'ai'}}">
+        <text>AI</text>
+      </view>
+
+      <!-- AI 消息内容 -->
+      <view class="msg-content" wx:if="{{msg.role === 'ai'}}">
+        <!-- 思维链 -->
+        <view class="cot-area {{msg.hasCoT ? '' : 'cot-faded'}}" wx:if="{{msg.cotSteps.length > 0}}">
+          <view class="cot-title">
+            <text>"灵枢"端侧思维链推理中 (CoT)...</text>
+          </view>
+          <view class="cot-step" wx:for="{{msg.cotSteps}}" wx:for-item="step" wx:for-index="sIdx" wx:key="sIdx">
+            <text class="step-num">{{sIdx + 1}}.</text>
+            <text class="step-text">{{step}}</text>
+          </view>
+        </view>
+
+        <!-- AI 回复文本 -->
+        <view class="ai-bubble">
+          <text class="ai-text">{{msg.content}}{{msg.typing ? '▋' : ''}}</text>
+        </view>
+
+        <!-- 快捷指令（仅欢迎消息） -->
+        <view class="quick-cmds" wx:if="{{msg.showQuickCmds}}">
+          <view class="quick-cmd" wx:for="{{quickCommands}}" wx:for-item="qc" wx:key="label" bindtap="useQuick" data-cmd="{{qc.cmd}}">
+            <text>{{qc.label}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 用户消息 -->
+      <view class="msg-content msg-content-user" wx:if="{{msg.role === 'user'}}">
+        <view class="user-bubble">
+          <text>{{msg.content}}</text>
+        </view>
+      </view>
+
+    </view>
+
+    <!-- 底部锚点 -->
+    <view id="msg-bottom" class="scroll-bottom"></view>
+  </scroll-view>
+
+  <!-- 输入区 -->
+  <view class="input-area">
+    <input
+      class="msg-input"
+      placeholder="请输入您的问题..."
+      value="{{inputMsg}}"
+      bindinput="onInput"
+      bindconfirm="sendMessage"
+      confirm-type="send"
+      confirm-hold
+      adjust-position
+      maxlength="200"
+    />
+    <view class="send-btn {{(!inputMsg || sending) ? 'send-disabled' : ''}}" bindtap="sendMessage">
+      <text>发送</text>
+    </view>
+  </view>
+
+</view>

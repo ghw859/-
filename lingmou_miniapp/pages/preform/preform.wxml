@@ -1,0 +1,288 @@
+<!-- pages/preform/preform.wxml -->
+<view class="preform-page {{elderlyMode ? 'elderly-mode' : ''}}">
+
+  <!-- 标题栏 -->
+  <view class="page-header">
+    <view class="header-icon form-header-icon"></view>
+    <view>
+      <view class="header-title">AI 智能预填单</view>
+      <view class="header-sub">自然语言解析 · 自动提取要素 · 一键直通码签发</view>
+    </view>
+  </view>
+
+  <!-- AI 文本解析区 -->
+  <view class="card">
+    <view class="section-title">
+      <view class="title-icon parse-icon"></view>
+      <text>AI 文本解析</text>
+      <view class="ai-badge" bindtap="toggleAIPanel">
+        <text>{{aiPanelOpen ? '收起' : '展开'}} ▾</text>
+      </view>
+    </view>
+
+    <view class="parse-area" wx:if="{{aiPanelOpen}}">
+      <textarea
+        class="parse-textarea"
+        placeholder="粘贴业务需求文本，AI 自动提取姓名、身份证、手机号、金额等要素..."
+        value="{{srcText}}"
+        bindinput="onSrcTextInput"
+        maxlength="500"
+        auto-height
+      />
+    </view>
+
+    <view class="parse-status">
+      <text class="status-text">{{statusText}}</text>
+    </view>
+
+    <view class="parse-actions">
+      <button class="btn-primary" bindtap="parseText">
+        <text>AI 智能解析</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 业务类型选择 -->
+  <view class="card">
+    <view class="section-title">
+      <view class="title-icon biz-icon"></view>
+      <text>业务类型</text>
+    </view>
+    <view class="biz-type-grid">
+      <view
+        class="biz-type-card {{currentBizType === item.value ? 'biz-active' : ''}}"
+        wx:for="{{bizTypes}}"
+        wx:key="value"
+        bindtap="selectBizType"
+        data-value="{{item.value}}"
+      >
+        <view class="biz-type-name">{{item.label}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 基础信息 -->
+  <view class="card" wx:if="{{currentBizType}}">
+    <view class="section-title">
+      <view class="title-icon info-icon"></view>
+      <text>基础身份要素</text>
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">姓名</text>
+      <input class="input-field" placeholder="请输入姓名" value="{{baseInfo.userName}}" data-path="baseInfo.userName" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">身份证号</text>
+      <input class="input-field" placeholder="请输入18位身份证号" value="{{baseInfo.idCard}}" data-path="baseInfo.idCard" bindinput="onInput" maxlength="18" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">手机号</text>
+      <input class="input-field" type="number" placeholder="请输入11位手机号" value="{{baseInfo.phone}}" data-path="baseInfo.phone" bindinput="onInput" maxlength="11" />
+    </view>
+  </view>
+
+  <!-- 大额取现 -->
+  <view class="card biz-card" wx:if="{{currentBizType === 'cash_reserve'}}">
+    <view class="section-title"><view class="title-icon cash-icon"></view><text>大额取现专项</text></view>
+    <view class="form-item">
+      <text class="form-label">取现金额（元）</text>
+      <input class="input-field" type="digit" placeholder="请输入金额" value="{{cashReserve.amount}}" data-path="cashReserve.amount" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">币种</text>
+      <picker bindchange="onCashCurrencyChange" range="{{currencyOptions}}" value="{{0}}">
+        <view class="picker-display input-field">{{cashReserve.currency}} ▾</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="form-label">取现日期</text>
+      <picker mode="date" bindchange="onCashDateChange" value="{{cashReserve.date}}" start="{{todayDate}}">
+        <view class="picker-display input-field">{{cashReserve.date || '请选择日期'}} ▾</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="form-label">取现时段</text>
+      <picker bindchange="onCashTimeChange" range="{{timeSlotOptions}}" value="{{cashTimeIndex}}">
+        <view class="picker-display input-field">{{cashReserve.time || '请选择时段'}} ▾</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="form-label">网点</text>
+      <input class="input-field" placeholder="请输入网点名称" value="{{cashReserve.branch}}" data-path="cashReserve.branch" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">用途</text>
+      <input class="input-field" placeholder="如 工资发放" value="{{cashReserve.purpose}}" data-path="cashReserve.purpose" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">资金来源</text>
+      <input class="input-field" placeholder="如 工资收入" value="{{cashReserve.fundSource}}" data-path="cashReserve.fundSource" bindinput="onInput" />
+    </view>
+  </view>
+
+  <!-- 办卡开户 -->
+  <view class="card biz-card" wx:if="{{currentBizType === 'open_card'}}">
+    <view class="section-title"><view class="title-icon card-icon"></view><text>开户办卡专项</text></view>
+    <view class="form-item">
+      <text class="form-label">卡类型</text>
+      <picker bindchange="onCardTypeChange" range="{{cardTypeOptions}}" value="{{openCardTypeIndex}}">
+        <view class="picker-display input-field">{{openCard.cardType}} ▾</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="form-label">账户类型</text>
+      <picker bindchange="onAccountTypeChange" range="{{accountTypeOptions}}" value="{{openAccountTypeIndex}}">
+        <view class="picker-display input-field">{{openCard.accountType}} ▾</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="form-label">初始存款（元）</text>
+      <input class="input-field" type="digit" placeholder="如 100" value="{{openCard.initialDeposit}}" data-path="openCard.initialDeposit" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">开通网上银行</text>
+      <picker bindchange="onOnlineBankingChange" range="{{yesNoOptions}}" value="{{openOnlineBankingIndex}}">
+        <view class="picker-display input-field">{{openCard.onlineBanking === 'yes' ? '是' : '否'}} ▾</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="form-label">开通手机银行</text>
+      <picker bindchange="onMobileBankingChange" range="{{yesNoOptions}}" value="{{openMobileBankingIndex}}">
+        <view class="picker-display input-field">{{openCard.mobileBanking === 'yes' ? '是' : '否'}} ▾</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="form-label">领卡方式</text>
+      <picker bindchange="onDeliveryChange" range="{{deliveryOptions}}" value="{{openDeliveryIndex}}">
+        <view class="picker-display input-field">{{openCard.deliveryMethod === 'branch' ? '网点领取' : '邮寄到家'}} ▾</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="form-label">紧急联系人</text>
+      <input class="input-field" placeholder="姓名+手机号" value="{{openCard.emergencyContact}}" data-path="openCard.emergencyContact" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">通讯地址</text>
+      <input class="input-field" placeholder="请输入地址" value="{{openCard.address}}" data-path="openCard.address" bindinput="onInput" />
+    </view>
+  </view>
+
+  <!-- 对公转账 -->
+  <view class="card biz-card" wx:if="{{currentBizType === 'corp_transfer'}}">
+    <view class="section-title"><view class="title-icon transfer-icon"></view><text>对公转账专项</text></view>
+    <view class="form-item">
+      <text class="form-label">付款人户名</text>
+      <input class="input-field" value="{{corpTransfer.payerName}}" data-path="corpTransfer.payerName" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">付款人账号</text>
+      <input class="input-field" value="{{corpTransfer.payerAccount}}" data-path="corpTransfer.payerAccount" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">收款人户名</text>
+      <input class="input-field" value="{{corpTransfer.recvName}}" data-path="corpTransfer.recvName" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">收款人账号</text>
+      <input class="input-field" value="{{corpTransfer.recvCard}}" data-path="corpTransfer.recvCard" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">收款银行</text>
+      <input class="input-field" value="{{corpTransfer.recvBank}}" data-path="corpTransfer.recvBank" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">转账金额（元）</text>
+      <input class="input-field" type="digit" value="{{corpTransfer.amount}}" data-path="corpTransfer.amount" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">是否加急</text>
+      <picker bindchange="onUrgentChange" range="{{yesNoOptions}}" value="{{corpUrgentIndex}}">
+        <view class="picker-display input-field">{{corpTransfer.urgent === 'yes' ? '加急' : '普通'}} ▾</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="form-label">用途</text>
+      <input class="input-field" value="{{corpTransfer.purpose}}" data-path="corpTransfer.purpose" bindinput="onInput" />
+    </view>
+  </view>
+
+  <!-- 现金缴款 -->
+  <view class="card biz-card" wx:if="{{currentBizType === 'cash_deposit'}}">
+    <view class="section-title"><view class="title-icon deposit-icon"></view><text>现金缴款专项</text></view>
+    <view class="form-item">
+      <text class="form-label">缴款人户名</text>
+      <input class="input-field" value="{{cashDeposit.payerName}}" data-path="cashDeposit.payerName" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">缴款人账号</text>
+      <input class="input-field" value="{{cashDeposit.payerAccount}}" data-path="cashDeposit.payerAccount" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">缴款金额（元）</text>
+      <input class="input-field" type="digit" value="{{cashDeposit.amount}}" data-path="cashDeposit.amount" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">缴款方式</text>
+      <picker bindchange="onDepositMethodChange" range="{{depositMethodOptions}}" value="{{depositMethodIndex}}">
+        <view class="picker-display input-field">{{cashDeposit.depositMethod === 'cash' ? '现金' : '转账'}} ▾</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="form-label">用途</text>
+      <input class="input-field" value="{{cashDeposit.purpose}}" data-path="cashDeposit.purpose" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">网点</text>
+      <input class="input-field" value="{{cashDeposit.branch}}" data-path="cashDeposit.branch" bindinput="onInput" />
+    </view>
+  </view>
+
+  <!-- 外币兑换 -->
+  <view class="card biz-card" wx:if="{{currentBizType === 'fx_exchange'}}">
+    <view class="section-title"><view class="title-icon fx-icon"></view><text>外币兑换专项</text></view>
+    <view class="form-item">
+      <text class="form-label">外币种类</text>
+      <picker bindchange="onFxCurrencyChange" range="{{fxCurrencyOptions}}" value="{{fxCurrencyIndex}}">
+        <view class="picker-display input-field">{{fxExchange.fxCurrency}} ▾</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="form-label">兑换方向</text>
+      <picker bindchange="onFxDirectionChange" range="{{fxDirectionOptions}}" value="{{fxDirectionIndex}}">
+        <view class="picker-display input-field">{{fxExchange.fxDirection === 'buy' ? '买入（外币→人民币）' : '卖出（人民币→外币）'}} ▾</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="form-label">外币金额</text>
+      <input class="input-field" type="digit" value="{{fxExchange.fxAmount}}" data-path="fxExchange.fxAmount" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">人民币金额</text>
+      <input class="input-field" type="digit" value="{{fxExchange.amount}}" data-path="fxExchange.amount" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">用途</text>
+      <input class="input-field" value="{{fxExchange.purpose}}" data-path="fxExchange.purpose" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">时段</text>
+      <picker bindchange="onFxTimeChange" range="{{timeSlotOptions}}" value="{{fxTimeIndex}}">
+        <view class="picker-display input-field">{{fxExchange.time || '请选择时段'}} ▾</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="form-label">网点</text>
+      <input class="input-field" value="{{fxExchange.branch}}" data-path="fxExchange.branch" bindinput="onInput" />
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="form-actions" wx:if="{{currentBizType}}">
+    <button class="btn-outline reset-btn" bindtap="resetForm">重置</button>
+    <button class="btn-primary submit-btn" bindtap="submitForm" loading="{{submitting}}" disabled="{{submitting}}">
+      <text>保存并签发直通码</text>
+    </button>
+  </view>
+
+</view>

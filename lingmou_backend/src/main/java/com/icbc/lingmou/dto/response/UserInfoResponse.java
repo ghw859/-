@@ -22,6 +22,9 @@ public class UserInfoResponse {
     @Schema(description = "用户名")
     private String username;
 
+    @Schema(description = "头像URL")
+    private String avatar;
+
     @Schema(description = "真实姓名")
     private String realName;
 

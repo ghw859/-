@@ -1,0 +1,152 @@
+<!-- pages/navigation/navigation.wxml -->
+<view class="nav-page {{elderlyMode ? 'elderly-mode' : ''}}">
+
+  <!-- 标题栏 -->
+  <view class="page-header">
+    <view class="header-icon nav-header-icon"></view>
+    <view>
+      <view class="header-title">智能预约排队</view>
+      <view class="header-sub">实时网点客流 · 智能推荐 · 在线取号</view>
+    </view>
+  </view>
+
+  <!-- 筛选条 -->
+  <view class="filter-bar">
+    <view class="filter-group">
+      <view class="filter-label">状态</view>
+      <view class="filter-chips">
+        <view class="chip {{filterStatus === 'all' ? 'chip-active' : ''}}" bindtap="onFilterStatus" data-value="all">全部</view>
+        <view class="chip {{filterStatus === 'free' ? 'chip-active' : ''}}" bindtap="onFilterStatus" data-value="free">畅通</view>
+        <view class="chip {{filterStatus === 'moderate' ? 'chip-active' : ''}}" bindtap="onFilterStatus" data-value="moderate">适中</view>
+        <view class="chip {{filterStatus === 'busy' ? 'chip-active' : ''}}" bindtap="onFilterStatus" data-value="busy">繁忙</view>
+      </view>
+    </view>
+
+    <view class="filter-group">
+      <view class="filter-label">业务</view>
+      <view class="filter-chips">
+        <view class="chip {{filterService === 'all' ? 'chip-active' : ''}}" bindtap="onFilterService" data-value="all">全部</view>
+        <view class="chip {{filterService === 'cash_reserve' ? 'chip-active' : ''}}" bindtap="onFilterService" data-value="cash_reserve">取现</view>
+        <view class="chip {{filterService === 'open_card' ? 'chip-active' : ''}}" bindtap="onFilterService" data-value="open_card">开户</view>
+        <view class="chip {{filterService === 'corp_transfer' ? 'chip-active' : ''}}" bindtap="onFilterService" data-value="corp_transfer">转账</view>
+        <view class="chip {{filterService === 'fx_exchange' ? 'chip-active' : ''}}" bindtap="onFilterService" data-value="fx_exchange">外汇</view>
+      </view>
+    </view>
+
+    <view class="filter-group">
+      <view class="filter-label">排序</view>
+      <picker class="sort-picker" bindchange="onSortChange" range="{{sortOptions}}" range-key="label" value="{{sortIndex}}">
+        <view class="picker-display">{{sortOptions[sortIndex].label}} ▾</view>
+      </picker>
+    </view>
+  </view>
+
+  <!-- 网点列表（渲染筛选后的结果） -->
+  <view class="branch-list" wx:if="{{filteredList.length > 0}}">
+    <view class="branch-card" wx:for="{{filteredList}}" wx:key="id">
+      <!-- 状态色条 -->
+      <view class="branch-stripe stripe-{{item.status}}"></view>
+
+      <view class="branch-content">
+        <!-- 头部 -->
+        <view class="branch-header">
+          <view class="branch-name">{{item.name}}</view>
+          <view class="badge {{item.status === 'free' ? 'badge-free' : item.status === 'moderate' ? 'badge-moderate' : 'badge-busy'}}">
+            {{item.status === 'free' ? '畅通' : item.status === 'moderate' ? '适中' : '繁忙'}}
+          </view>
+        </view>
+
+        <!-- 地址和距离 -->
+        <view class="branch-info">
+          <text class="branch-address">{{item.address}}</text>
+          <text class="branch-distance">距您 {{item.distance}} km</text>
+        </view>
+
+        <!-- 等待时间 -->
+        <view class="wait-info">
+          <view class="wait-time">
+            <text class="wait-label">预计等待</text>
+            <text class="wait-value">{{item.waitTime}} 分钟</text>
+          </view>
+          <view class="wait-trend">
+            <!-- 简易趋势图 -->
+            <view class="trend-bars">
+              <view class="trend-bar" wx:for="{{item.trend}}" wx:for-item="tv" wx:for-index="ti" wx:key="ti"
+                style="height: {{tv * 3}}rpx; background: {{tv > 15 ? '#ef4444' : tv > 8 ? '#f59e0b' : '#22c55e'}};">
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 支持业务 -->
+        <view class="service-tags">
+          <text class="service-tag" wx:for="{{item.services}}" wx:for-item="svc" wx:key="*this">
+            {{svc === 'cash_reserve' ? '取现' : svc === 'open_card' ? '开户' : svc === 'corp_transfer' ? '转账' : svc === 'cash_deposit' ? '缴款' : svc === 'fx_exchange' ? '外汇' : svc}}
+          </text>
+        </view>
+
+        <!-- 操作按钮 -->
+        <view class="branch-actions">
+          <button class="btn-primary book-btn" bindtap="openBooking" data-branch="{{item}}">
+            预约取号
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空结果 -->
+  <view class="card empty-state" wx:elif="{{loading}}">
+    <text>正在加载网点...</text>
+  </view>
+  <view class="card empty-state" wx:else>
+    <text>没有符合条件的网点，请调整筛选条件</text>
+  </view>
+
+  <!-- 预约弹窗 -->
+  <view class="modal-mask" wx:if="{{bookingVisible}}" bindtap="closeBooking">
+    <view class="modal-content" catchtap="stopBubble">
+      <view class="modal-header">
+        <text class="modal-title">预约取号</text>
+        <text class="modal-close" bindtap="closeBooking">✕</text>
+      </view>
+
+      <view class="modal-body" wx:if="{{bookingBranch}}">
+        <view class="modal-branch-name">{{bookingBranch.name}}</view>
+
+        <view class="form-item">
+          <text class="form-label">日期</text>
+          <picker mode="date" bindchange="onDateChange" value="{{bookingDate}}" start="{{todayDate}}">
+            <view class="picker-display input-field">{{bookingDate || '请选择日期'}}</view>
+          </picker>
+        </view>
+
+        <view class="form-item">
+          <text class="form-label">时段</text>
+          <picker bindchange="onTimeChange" range="{{timeSlots}}" value="{{timeSlotIndex}}">
+            <view class="picker-display input-field">{{bookingTime || '请选择时段'}}</view>
+          </picker>
+        </view>
+
+        <view class="form-item">
+          <text class="form-label">业务类型</text>
+          <picker bindchange="onBizTypeChange" range="{{bizTypes}}" range-key="label" value="{{bookingBizIndex}}">
+            <view class="picker-display input-field">{{bookingBizType ? bizTypes[bookingBizIndex].label : '请选择业务类型'}}</view>
+          </picker>
+        </view>
+
+        <view class="slot-hint">
+          <text>每时段放号10个，按时到店扫码激活享优先叫号</text>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <button class="btn-outline modal-cancel" bindtap="closeBooking">取消</button>
+        <button class="btn-primary modal-confirm" bindtap="confirmBooking" loading="{{bookingLoading}}" disabled="{{bookingLoading}}">
+          确认预约
+        </button>
+      </view>
+    </view>
+  </view>
+
+</view>

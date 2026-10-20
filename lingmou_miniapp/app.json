@@ -1,0 +1,60 @@
+{
+  "pages": [
+    "pages/overview/overview",
+    "pages/navigation/navigation",
+    "pages/preform/preform",
+    "pages/qrcode/qrcode",
+    "pages/progress/progress",
+    "pages/history/history",
+    "pages/ai-assistant/ai-assistant",
+    "pages/login/login",
+    "pages/register/register"
+  ],
+  "window": {
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#1a56db",
+    "navigationBarTitleText": "灵枢智慧银行",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f0f4f8"
+  },
+  "tabBar": {
+    "color": "#94a3b8",
+    "selectedColor": "#1a56db",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/overview/overview",
+        "text": "总览看板",
+        "iconPath": "images/tab-overview.png",
+        "selectedIconPath": "images/tab-overview-active.png"
+      },
+      {
+        "pagePath": "pages/navigation/navigation",
+        "text": "预约排队",
+        "iconPath": "images/tab-navigation.png",
+        "selectedIconPath": "images/tab-navigation-active.png"
+      },
+      {
+        "pagePath": "pages/preform/preform",
+        "text": "预填单",
+        "iconPath": "images/tab-preform.png",
+        "selectedIconPath": "images/tab-preform-active.png"
+      },
+      {
+        "pagePath": "pages/qrcode/qrcode",
+        "text": "直通码",
+        "iconPath": "images/tab-qrcode.png",
+        "selectedIconPath": "images/tab-qrcode-active.png"
+      },
+      {
+        "pagePath": "pages/ai-assistant/ai-assistant",
+        "text": "AI助手",
+        "iconPath": "images/tab-ai.png",
+        "selectedIconPath": "images/tab-ai-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

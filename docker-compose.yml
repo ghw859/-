@@ -1,8 +1,25 @@
-# ICBC · 灵枢 全栈容器编排（Day 10）
-# 前置：Docker Desktop 4.25+（Compose v2.24+，ai 服务 env_file 用到 required: false）
+# ============================================================
+# ICBC · 灵枢 全栈容器编排（独立部署栈）
+#
+# 隔离说明（与宿主机上已有的 tiange 项目完全分离）：
+#   项目名     : lingmou          （tiange 为 backend）
+#   容器名     : lingmou-*        （tiange 为 tiange-*）
+#   网络       : lingmou-net      （tiange 为 backend_tiange-network）
+#   数据卷     : lingmou_*        （tiange 为 backend_*）
+#   宿主机端口 : 18090/18091/18092/13306/16379
+#                （tiange 占用 18080-18082/18000/35432/19530/37379；
+#                  3306 被宿主机原生 MySQL 占用，故映射到 13306）
+#
 # 启动：docker compose up -d --build
-# 验证：浏览器 http://localhost （前端入口，nginx 统一代理后端与 AI）
-# 密钥：root .env（DB_PASSWORD/JWT_SECRET）+ lingmou_ai/.env（DASHSCOPE_API_KEY），均不入 Git
+# 访问：http://localhost:18090        （前端，nginx 统一代理后端与 AI）
+#       http://localhost:18091/swagger-ui.html  （后端接口文档，直连）
+#       http://localhost:18092/api/ai/health    （AI 服务，直连）
+# 停止：docker compose down           （保留数据）
+# 清空：docker compose down -v        （连同数据卷一起删除）
+#
+# 密钥：根目录 .env（DB_PASSWORD / JWT_SECRET），
+#       AI 密钥放 lingmou_ai/.env（DASHSCOPE_API_KEY），均不入 Git
+# ============================================================
 
 name: lingmou
 
@@ -16,40 +33,49 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
       MYSQL_DATABASE: lingmou
       TZ: Asia/Shanghai
-    # 与 README 建库语句字符集一致（utf8mb4_general_ci）
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
-      - mysql_data:/var/lib/mysql
+      - lingmou_mysql_data:/var/lib/mysql
+      # 统一服务端/客户端字符集（修复初始化脚本中文二次编码）
+      - ./docker/mysql/charset.cnf:/etc/mysql/conf.d/charset.cnf:ro
       # 首次建卷时自动执行建表与演示数据初始化（仅空数据目录时生效）
       - ./lingmou_backend/src/main/resources/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
-    # 宿主机调试需要再放开；默认注释避免与本地 MySQL 端口冲突
-    # ports:
-    #   - "3306:3306"
+    ports:
+      # 宿主机 3306 已被本地原生 MySQL 占用，映射到 13306 避免冲突
+      - "13306:3306"
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 10s
       timeout: 5s
       retries: 12
-      start_period: 30s
+      start_period: 40s
+    networks:
+      - lingmou-net
 
   # ---------- Redis 7 ----------
   redis:
     image: redis:7-alpine
     container_name: lingmou-redis
     restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
     volumes:
-      - redis_data:/data
-    # ports:
-    #   - "6379:6379"
+      - lingmou_redis_data:/data
+    ports:
+      - "16379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 12
+    networks:
+      - lingmou-net
 
   # ---------- AI 服务（Python FastAPI :8000）----------
   ai:
-    build: ./lingmou_ai
+    build:
+      context: ./lingmou_ai
+      dockerfile: Dockerfile
+    image: lingmou-ai:1.0.0
     container_name: lingmou-ai
     restart: unless-stopped
     # 团队成员 clone 后若无该文件（已 gitignore），AI 自动走规则降级，不影响启动
@@ -59,22 +85,28 @@ services:
     environment:
       # environment 优先级高于 env_file：容器内必须指向 redis 服务名
       REDIS_URL: redis://redis:6379/0
-      CORS_ALLOW_ORIGINS: "http://localhost,http://localhost:5173,http://localhost:8080"
+      CORS_ALLOW_ORIGINS: "http://localhost:18090,http://localhost:18091,http://localhost:18092"
+      TZ: Asia/Shanghai
     depends_on:
       redis:
         condition: service_healthy
     ports:
-      - "8000:8000"   # 直连调试用；演示走 nginx 统一入口，可注释
-    # 镜像内自带 /api/ai/health 健康检查
+      - "18092:8000"
+    networks:
+      - lingmou-net
 
   # ---------- Java 后端（Spring Boot :8080）----------
   backend:
-    build: ./lingmou_backend
+    build:
+      context: ./lingmou_backend
+      dockerfile: Dockerfile
+    image: lingmou-backend:1.0.0
     container_name: lingmou-backend
     restart: unless-stopped
     environment:
       # 用 Spring Boot 松散绑定环境变量覆盖 application.yml 的 localhost，Java 代码零改动
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/lingmou?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowPublicKeyRetrieval=true
+      # 显式声明 utf8mb4 会话字符集，避免连接默认 latin1 导致中文读写乱码
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/lingmou?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&sessionVariables=character_set_client=utf8mb4,character_set_connection=utf8mb4,character_set_results=utf8mb4&allowPublicKeyRetrieval=true
       DB_PASSWORD: ${DB_PASSWORD:-root}
       SPRING_DATA_REDIS_HOST: redis
       REDIS_PASSWORD: ""
@@ -83,28 +115,50 @@ services:
       UPLOAD_DIR: /app/uploads
       TZ: Asia/Shanghai
     volumes:
-      - backend_uploads:/app/uploads
+      - lingmou_uploads:/app/uploads
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
     ports:
-      - "8080:8080"   # 直连调试用；演示走 nginx 统一入口，可注释
+      - "18091:8080"
+    networks:
+      - lingmou-net
 
   # ---------- 前端（Vue3 + nginx :80）----------
   frontend:
-    build: ./gonghang_vue3
+    build:
+      context: ./gonghang_vue3
+      dockerfile: Dockerfile
+    image: lingmou-frontend:1.0.0
     container_name: lingmou-frontend
     restart: unless-stopped
     depends_on:
-      - backend
-      - ai
+      backend:
+        condition: service_started
+      ai:
+        condition: service_started
     ports:
-      - "80:80"       # 演示入口：http://localhost
-    # nginx.conf 内对 ai/backend 做 TCP 探测无意义，起不出来时浏览器直接报 502，可定位
+      - "18090:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - lingmou-net
+
+networks:
+  lingmou-net:
+    name: lingmou-net
+    driver: bridge
 
 volumes:
-  mysql_data:
-  redis_data:
-  backend_uploads:
+  lingmou_mysql_data:
+    name: lingmou_mysql_data
+  lingmou_redis_data:
+    name: lingmou_redis_data
+  lingmou_uploads:
+    name: lingmou_uploads

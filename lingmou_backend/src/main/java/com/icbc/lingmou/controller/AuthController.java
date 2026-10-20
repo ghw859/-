@@ -3,6 +3,7 @@ package com.icbc.lingmou.controller;
 import com.icbc.lingmou.common.Result;
 import com.icbc.lingmou.dto.request.LoginRequest;
 import com.icbc.lingmou.dto.request.RegisterRequest;
+import com.icbc.lingmou.dto.request.WxLoginRequest;
 import com.icbc.lingmou.dto.response.AuthResponse;
 import com.icbc.lingmou.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +28,13 @@ public class AuthController {
     @PostMapping("/login")
     public Result<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
+        return Result.success("登录成功", response);
+    }
+
+    @Operation(summary = "微信授权登录", description = "小程序微信一键登录，首次自动创建账号，返回JWT Token")
+    @PostMapping("/wx-login")
+    public Result<AuthResponse> wxLogin(@RequestBody WxLoginRequest request) {
+        AuthResponse response = authService.wxLogin(request);
         return Result.success("登录成功", response);
     }
 

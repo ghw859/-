@@ -28,6 +28,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/**")        // 拦截所有 /api 开头的请求
                 .excludePathPatterns(             // 以下接口不需要登录
                         "/api/auth/login",          // 登录
+                        "/api/auth/wx-login",       // 微信授权登录（小程序）
                         "/api/auth/register",       // 注册
                         "/api/auth/sms-code",       // 发送验证码
                         "/api/auth/reset-password", // 找回密码
