@@ -9,6 +9,8 @@ App({
     userInfo: null,
     // 是否老年模式
     elderlyMode: false,
+    // 模块级 AI 导航预设问题（overview 等页面携带跳转 AI 助手）
+    aiPresetQuestion: '',
   },
 
   onLaunch() {

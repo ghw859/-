@@ -1,6 +1,7 @@
 // pages/overview/overview.js
 const { get } = require('../../utils/request')
 const { getAIReply } = require('../../utils/constants')
+const charts = require('../../utils/charts')
 const auth = require('../../utils/auth')
 
 Page({
@@ -24,30 +25,8 @@ Page({
     diagnosisLoading: true,
     typingIndex: 0,
     typingTimer: null,
-    // 饼图数据
-    pieData: [
-      { label: '已完成', value: 0, color: '#10b981' },
-      { label: '进行中', value: 0, color: '#3b82f6' },
-      { label: '已取消', value: 0, color: '#94a3b8' },
-    ],
-    // 折线图数据
-    lineData: [],
-    // 雷达图数据
-    radarData: [
-      { label: '办理效率', value: 85 },
-      { label: '服务态度', value: 90 },
-      { label: '等待时间', value: 75 },
-      { label: '业务覆盖', value: 92 },
-      { label: '安全等级', value: 95 },
-    ],
-    // 柱状图数据
-    barData: [
-      { label: '取现', value: 0, color: '#f59e0b' },
-      { label: '开户', value: 0, color: '#10b981' },
-      { label: '转账', value: 0, color: '#6366f1' },
-      { label: '缴款', value: 0, color: '#f97316' },
-      { label: '外汇', value: 0, color: '#a855f7' },
-    ],
+    // 资产趋势图范围（half=近半年 full=全年）
+    chartRange: 'full',
     // 最近交易
     recentTransactions: [],
   },
@@ -64,6 +43,10 @@ Page({
       return
     }
     this.loadAll()
+  },
+
+  onReady() {
+    this.drawAllCharts()
   },
 
   onUnload() {
@@ -203,51 +186,113 @@ Page({
     this.setData({ typingTimer: timer })
   },
 
-  // 预约列表
+  // 预约列表（最近记录）
   async loadAppointments() {
     try {
       const data = await get('/api/appointments/my')
       const list = Array.isArray(data) ? data : (data && data.list) || []
 
-      // 统计饼图
-      let completed = 0, active = 0, canceled = 0
-      const bizCount = { cash_reserve: 0, open_card: 0, corp_transfer: 0, cash_deposit: 0, fx_exchange: 0 }
       const recent = []
-
       list.forEach(a => {
-        const status = (a.status || '').toLowerCase()
-        if (status === 'completed') completed++
-        else if (status === 'canceled' || status === 'expired') canceled++
-        else if (status !== 'virtual') active++
-
-        const bizType = (a.businessType || '').toLowerCase()
-        if (bizCount[bizType] !== undefined) bizCount[bizType]++
-
         if (recent.length < 5) {
           recent.push({
             id: a.id,
             voucherNum: a.voucherNum || '',
             businessType: a.businessType || '',
-            status: status,
+            status: (a.status || '').toLowerCase(),
             createdAt: a.createdAt || a.appointmentTime || '',
           })
         }
       })
 
-      this.setData({
-        'pieData[0].value': completed,
-        'pieData[1].value': active,
-        'pieData[2].value': canceled,
-        'barData[0].value': bizCount.cash_reserve,
-        'barData[1].value': bizCount.open_card,
-        'barData[2].value': bizCount.corp_transfer,
-        'barData[3].value': bizCount.cash_deposit,
-        'barData[4].value': bizCount.fx_exchange,
-        recentTransactions: recent,
-      })
+      this.setData({ recentTransactions: recent })
     } catch (e) {
       // 降级使用空数据
     }
+  },
+
+  // ============ 数据总览四图（canvas 2d） ============
+  drawAllCharts() {
+    // 1. 消费分类占比环形图
+    charts.initCanvas(this, '#donutCanvas').then(({ ctx, width, height }) => {
+      charts.drawDonut(ctx, width, height, {
+        data: [
+          { name: '生活缴费', value: 45, color: '#06b6d4' },
+          { name: '基金理财', value: 30, color: '#3b82f6' },
+          { name: '跨境消费', value: 15, color: '#10b981' },
+          { name: '其他支出', value: 10, color: '#cbd5e1' },
+        ],
+        totalText: '￥14.2K',
+        subText: '总支出',
+      })
+    }).catch(() => {})
+
+    // 2. 资产趋势面积图
+    this.drawAreaChart()
+
+    // 3. AI多维账户风控雷达图
+    charts.initCanvas(this, '#radarCanvas').then(({ ctx, width, height }) => {
+      charts.drawRadarChart(ctx, width, height, {
+        indicators: ['账户交易安全', '电信反诈健康度', '资金流动性', '跨境交易合规', '反洗钱风险等级', '预约授权合规'],
+        values: [98, 96, 88, 92, 90, 95],
+        max: 100,
+      })
+    }).catch(() => {})
+
+    // 4. 近四季度预约业务分类办结量堆叠柱状图
+    charts.initCanvas(this, '#barCanvas').then(({ ctx, width, height }) => {
+      charts.drawStackedBar(ctx, width, height, {
+        labels: ['一季度', '二季度', '三季度', '四季度'],
+        yMax: 150,
+        series: [
+          { name: '个人开户/挂失', color: '#06b6d4', data: [38, 52, 30, 22] },
+          { name: '理财签约/测评', color: '#3b82f6', data: [60, 38, 68, 52] },
+          { name: '对公/贷款面签', color: '#6366f1', data: [30, 45, 38, 60] },
+        ],
+      })
+    }).catch(() => {})
+  },
+
+  drawAreaChart() {
+    const AREA_DATA = {
+      half: {
+        months: ['02月', '03月', '04月', '05月', '06月', '07月'],
+        total: [318, 352, 336, 405, 446, 482.5],
+        net: [296, 328, 310, 378, 418, 452],
+      },
+      full: {
+        months: ['01月', '02月', '03月', '04月', '05月', '06月', '07月', '08月', '09月', '10月', '11月', '12月'],
+        total: [268, 289, 318, 305, 348, 382, 421, 463, 528, 612, 738, 945],
+        net: [252, 270, 296, 286, 324, 356, 392, 430, 488, 566, 684, 886],
+      },
+    }
+    const d = AREA_DATA[this.data.chartRange]
+    charts.initCanvas(this, '#areaCanvas').then(({ ctx, width, height }) => {
+      charts.drawArea(ctx, width, height, d)
+    }).catch(() => {})
+  },
+
+  // 近半年/全年切换
+  toggleAreaRange(e) {
+    const range = e.currentTarget.dataset.range
+    if (!range || range === this.data.chartRange) return
+    this.setData({ chartRange: range })
+    this.drawAreaChart()
+  },
+
+  // ============ 历史预约查询（独立模块，跳转专属页面） ============
+  goHistory() {
+    wx.navigateTo({ url: '/pages/appt-history/appt-history' })
+  },
+
+  // ============ 模块级 AI 导航 ============
+  goAINav(e) {
+    const q = (e.currentTarget.dataset.q || '').trim()
+    const app = getApp()
+    if (app && app.globalData) {
+      app.globalData.aiPresetQuestion = q
+    }
+    wx.switchTab({ url: '/pages/ai-assistant/ai-assistant' })
   },
 
   // 热力图颜色

@@ -1,14 +1,20 @@
-# ICBC · 灵枢前端镜像（nginx 托管 Vue3 构建产物）
-#
-# 构建方式：产物预构建 + nginx 托管
-#   1) 在宿主机（或 CI）执行：npm ci --legacy-peer-deps && npm run build
-#   2) docker build -t lingmou-frontend:1.0.0 .
-#
-# 说明：原多阶段方案需要 node:24-alpine 基础镜像。当前环境镜像仓库
-# 无法稳定拉取 node 系列镜像，故改为消费已构建的 dist/ 产物，
-# 运行镜像与多阶段方案完全一致（nginx:1.27-alpine），不影响运行行为。
-# 若后续可正常拉取 node 镜像，可恢复多阶段构建。
+# ICBC · 灵枢前端镜像（多阶段：node 构建 + nginx 托管）
 
+# ---------- 构建阶段 ----------
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+# 先拷贝依赖清单，最大化利用构建缓存
+# eslint-plugin-oxlint 与 oxlint 存在 peer 版本错位，需 --legacy-peer-deps
+COPY package.json package-lock.json ./
+RUN npm ci --legacy-peer-deps
+
+# 拷贝源码并构建产物（跳过 lint，仅类型检查 + vite build）
+COPY . .
+RUN npm run build
+
+# ---------- 运行阶段 ----------
 FROM nginx:1.27-alpine
 
 ENV TZ=Asia/Shanghai
@@ -16,8 +22,8 @@ ENV TZ=Asia/Shanghai
 # 反向代理配置：/api/ai → Python 8000（含 WebSocket），其余 /api → Java 8080
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Vue3 构建产物
-COPY dist /usr/share/nginx/html
+# 构建产物
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 EXPOSE 80
 

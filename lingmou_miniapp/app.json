@@ -6,6 +6,7 @@
     "pages/qrcode/qrcode",
     "pages/progress/progress",
     "pages/history/history",
+    "pages/appt-history/appt-history",
     "pages/ai-assistant/ai-assistant",
     "pages/login/login",
     "pages/register/register"

@@ -38,6 +38,14 @@ Page({
       wx.redirectTo({ url: '/pages/login/login' })
       return
     }
+    // 模块级 AI 导航：携带预设问题自动提问
+    const app = getApp()
+    const preset = app && app.globalData ? app.globalData.aiPresetQuestion : ''
+    if (preset) {
+      app.globalData.aiPresetQuestion = ''
+      this.setData({ inputMsg: preset })
+      this.sendMessage()
+    }
   },
 
   onInput(e) {

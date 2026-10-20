@@ -1,0 +1,95 @@
+.container {
+  min-height: 100vh;
+  background: #f0f4f8;
+  padding: 24rpx;
+  box-sizing: border-box;
+}
+
+/* 状态筛选 */
+.filter-tabs {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+.filter-tab {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #64748b;
+  background: #ffffff;
+  border-radius: 16rpx;
+}
+.filter-tab-active {
+  background: #1a56db;
+  color: #ffffff;
+}
+
+/* 状态提示 */
+.state-box {
+  text-align: center;
+  padding: 120rpx 0;
+}
+.state-text {
+  font-size: 28rpx;
+  color: #94a3b8;
+  font-weight: 600;
+}
+.state-sub {
+  font-size: 24rpx;
+  color: #cbd5e1;
+  margin-top: 12rpx;
+}
+
+/* 记录列表 */
+.list {
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 0 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+.appt-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid #e2e8f0;
+}
+.appt-item:last-child {
+  border-bottom: none;
+}
+.appt-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  min-width: 0;
+  flex: 1;
+}
+.appt-biz {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1e293b;
+}
+.appt-branch {
+  font-size: 24rpx;
+  color: #64748b;
+}
+.appt-time {
+  font-size: 22rpx;
+  color: #94a3b8;
+  font-family: monospace;
+}
+
+.list-footer {
+  text-align: center;
+  padding: 24rpx 0;
+  font-size: 22rpx;
+  color: #94a3b8;
+}
+
+/* 老年模式 */
+.elderly-mode .filter-tab { font-size: 30rpx; padding: 20rpx 0; }
+.elderly-mode .appt-biz { font-size: 34rpx; }
+.elderly-mode .appt-branch { font-size: 28rpx; }
+.elderly-mode .appt-time { font-size: 26rpx; }

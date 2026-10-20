@@ -88,6 +88,7 @@
 .bar-icon { background: #f59e0b; }
 .radar-icon { background: #6366f1; }
 .history-icon { background: #3b82f6; }
+.area-icon { background: #3b82f6; }
 
 .ai-badge {
   margin-left: auto;
@@ -215,121 +216,149 @@
   font-weight: 600;
 }
 
-/* 图表区域 */
-.chart-container {
+/* 图表区域（canvas 2d） */
+.chart-canvas {
+  width: 100%;
   margin-top: 20rpx;
+  display: block;
+}
+.donut-canvas { height: 360rpx; }
+.area-canvas { height: 400rpx; }
+.radar-canvas { height: 460rpx; }
+.bar-canvas { height: 420rpx; }
+
+/* 模块级 AI 导航入口 */
+.ai-chip {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: #eef2ff;
+  color: #4f46e5;
+  border: 1rpx solid #c7d2fe;
+  padding: 6rpx 18rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  font-weight: 700;
+}
+.ai-chip-light {
+  margin-left: 0;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
-.pie-list {
+.welcome-side {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  align-items: flex-end;
+  gap: 12rpx;
 }
 
-.pie-item {
+/* 趋势图范围切换 */
+.range-toggle {
   display: flex;
-  align-items: center;
-  gap: 16rpx;
+  justify-content: flex-end;
+  gap: 8rpx;
+  margin-top: 12rpx;
 }
-
-.pie-dot {
-  width: 24rpx;
-  height: 24rpx;
-  border-radius: 50%;
-}
-
-.pie-label {
-  font-size: 28rpx;
-  color: #475569;
-  flex: 1;
-}
-
-.pie-value {
-  font-size: 28rpx;
-  color: #1e293b;
+.range-btn {
+  font-size: 20rpx;
   font-weight: 700;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 6rpx 20rpx;
+  border-radius: 12rpx;
+}
+.range-active {
+  background: #ffffff;
+  color: #1e293b;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
 }
 
-/* 柱状图 */
-.bar-chart {
-  margin-top: 20rpx;
+/* 雷达图安全系数徽标 */
+.safe-badge {
+  flex-shrink: 0;
+  background: #ecfdf5;
+  color: #059669;
+  border: 1rpx solid #a7f3d0;
+  padding: 6rpx 16rpx;
+  border-radius: 8rpx;
+  font-size: 20rpx;
+  font-weight: 700;
+  font-family: monospace;
+  margin-left: 12rpx;
 }
 
-.bar-item {
+.unit-label {
+  flex-shrink: 0;
+  font-size: 20rpx;
+  color: #64748b;
+  font-weight: 700;
+  margin-left: 12rpx;
+}
+
+/* 底部独立模块：历史预约查询 */
+.history-module {
+  margin-top: 24rpx;
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 28rpx 24rpx;
   display: flex;
   align-items: center;
-  margin-bottom: 16rpx;
+  gap: 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
 }
-
-.bar-label {
-  width: 80rpx;
-  font-size: 24rpx;
-  color: #64748b;
-  text-align: right;
-  margin-right: 16rpx;
+.history-module:active {
+  opacity: 0.85;
 }
-
-.bar-track {
-  flex: 1;
+.history-module-icon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(135deg, #0891b2, #22d3ee);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.history-module-icon-inner {
+  width: 32rpx;
   height: 32rpx;
-  background: #f1f5f9;
-  border-radius: 16rpx;
-  overflow: hidden;
+  border: 4rpx solid #ffffff;
+  border-radius: 50%;
+  position: relative;
 }
-
-.bar-fill {
-  height: 100%;
-  border-radius: 16rpx;
-  transition: width 0.6s ease;
+.history-module-icon-inner::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4rpx;
+  height: 14rpx;
+  background: #ffffff;
+  transform: translate(-50%, -100%);
+  transform-origin: bottom center;
 }
-
-.bar-value {
-  width: 60rpx;
-  font-size: 24rpx;
-  color: #1e293b;
-  font-weight: 700;
-  margin-left: 16rpx;
-}
-
-/* 雷达图（简化为进度条） */
-.radar-chart {
-  margin-top: 20rpx;
-}
-
-.radar-item {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16rpx;
-}
-
-.radar-label {
-  width: 160rpx;
-  font-size: 24rpx;
-  color: #64748b;
-  text-align: right;
-  margin-right: 16rpx;
-}
-
-.radar-track {
+.history-module-info {
   flex: 1;
-  height: 28rpx;
-  background: #f1f5f9;
-  border-radius: 14rpx;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  min-width: 0;
 }
-
-.radar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
-  border-radius: 14rpx;
-}
-
-.radar-value {
-  width: 60rpx;
-  font-size: 24rpx;
-  color: #1e293b;
+.history-module-title {
+  font-size: 30rpx;
   font-weight: 700;
-  margin-left: 16rpx;
+  color: #1e293b;
+}
+.history-module-sub {
+  font-size: 22rpx;
+  color: #94a3b8;
+}
+.history-module-arrow {
+  font-size: 44rpx;
+  color: #cbd5e1;
+  font-weight: 300;
+  flex-shrink: 0;
 }
 
 /* 最近记录 */

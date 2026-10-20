@@ -7,8 +7,11 @@
       <view class="welcome-title">灵枢智慧银行</view>
       <view class="welcome-sub">AI数字人大堂经理 · 全程智能陪伴</view>
     </view>
-    <view class="welcome-badge">
-      <text class="badge-text">信誉 {{stats.creditScore}}</text>
+    <view class="welcome-side">
+      <view class="welcome-badge">
+        <text class="badge-text">信誉 {{stats.creditScore}}</text>
+      </view>
+      <view class="ai-chip ai-chip-light" catchtap="goAINav" data-q="我想咨询理财，配置闲置资金">AI导航</view>
     </view>
   </view>
 
@@ -37,6 +40,7 @@
     <view class="section-title">
       <view class="title-icon heatmap-icon"></view>
       <text>AI 智能客流热力图</text>
+      <view class="ai-chip" catchtap="goAINav" data-q="哪个网点客流最少，我想预约办理业务">AI导航</view>
     </view>
     <view class="section-subtitle mb-2">基于实时客流与历史趋势预测 · 红色=繁忙 / 绿色=畅通</view>
 
@@ -73,6 +77,7 @@
     <view class="section-title">
       <view class="title-icon ai-icon"></view>
       <text>AI 智能诊断</text>
+      <view class="ai-chip" catchtap="goAINav" data-q="我想咨询理财，配置闲置资金">AI导航</view>
       <view class="ai-badge"><text>端侧推理</text></view>
     </view>
     <view class="diagnosis-content">
@@ -85,55 +90,50 @@
     </view>
   </view>
 
-  <!-- 饼图：预约状态分布 -->
+  <!-- 1. 消费分类占比环形图 -->
   <view class="card">
     <view class="section-title">
       <view class="title-icon pie-icon"></view>
-      <text>预约状态分布</text>
+      <text>消费分类占比 (AI实时归类)</text>
+      <view class="ai-chip" catchtap="goAINav" data-q="我想给国外汇钱">AI导航</view>
     </view>
-    <view class="chart-container">
-      <view class="pie-list">
-        <view class="pie-item" wx:for="{{pieData}}" wx:key="label">
-          <view class="pie-dot" style="background: {{item.color}}"></view>
-          <text class="pie-label">{{item.label}}</text>
-          <text class="pie-value">{{item.value}} 笔</text>
-        </view>
-      </view>
-    </view>
+    <canvas type="2d" id="donutCanvas" class="chart-canvas donut-canvas"></canvas>
   </view>
 
-  <!-- 柱状图：业务类型分布 -->
+  <!-- 2. 资产总值与净值月度演进趋势 -->
   <view class="card">
     <view class="section-title">
-      <view class="title-icon bar-icon"></view>
-      <text>业务类型分布</text>
+      <view class="title-icon area-icon"></view>
+      <text>资产总值与净值月度演进</text>
+      <view class="ai-chip" catchtap="goAINav" data-q="我想咨询理财">AI导航</view>
     </view>
-    <view class="bar-chart">
-      <view class="bar-item" wx:for="{{barData}}" wx:key="label">
-        <view class="bar-label">{{item.label}}</view>
-        <view class="bar-track">
-          <view class="bar-fill" style="width: {{item.value > 0 ? (item.value * 20 + 10) : 0}}%; background: {{item.color}};"></view>
-        </view>
-        <view class="bar-value">{{item.value}}</view>
-      </view>
+    <view class="range-toggle">
+      <view class="range-btn {{chartRange === 'half' ? 'range-active' : ''}}" catchtap="toggleAreaRange" data-range="half">近半年</view>
+      <view class="range-btn {{chartRange === 'full' ? 'range-active' : ''}}" catchtap="toggleAreaRange" data-range="full">全年</view>
     </view>
+    <canvas type="2d" id="areaCanvas" class="chart-canvas area-canvas"></canvas>
   </view>
 
-  <!-- 雷达图：服务质量评估 -->
+  <!-- 3. AI多维账户风控与资产健康度雷达图 -->
   <view class="card">
     <view class="section-title">
       <view class="title-icon radar-icon"></view>
-      <text>服务质量评估</text>
+      <text>AI多维账户风控健康度</text>
+      <view class="ai-chip" catchtap="goAINav" data-q="我银行卡丢了想挂失">AI导航</view>
+      <view class="safe-badge"><text>安全系数: 98</text></view>
     </view>
-    <view class="radar-chart">
-      <view class="radar-item" wx:for="{{radarData}}" wx:key="label">
-        <view class="radar-label">{{item.label}}</view>
-        <view class="radar-track">
-          <view class="radar-fill" style="width: {{item.value}}%;"></view>
-        </view>
-        <view class="radar-value">{{item.value}}</view>
-      </view>
+    <canvas type="2d" id="radarCanvas" class="chart-canvas radar-canvas"></canvas>
+  </view>
+
+  <!-- 4. 近四季度预约业务分类办结量堆叠柱状图 -->
+  <view class="card">
+    <view class="section-title">
+      <view class="title-icon bar-icon"></view>
+      <text>近四季度预约业务办结量</text>
+      <view class="ai-chip" catchtap="goAINav" data-q="我想预约办理业务">AI导航</view>
+      <view class="unit-label"><text>单位: 笔</text></view>
     </view>
+    <canvas type="2d" id="barCanvas" class="chart-canvas bar-canvas"></canvas>
   </view>
 
   <!-- 最近交易记录 -->
@@ -141,6 +141,7 @@
     <view class="section-title">
       <view class="title-icon history-icon"></view>
       <text>最近预约</text>
+      <view class="ai-chip" catchtap="goAINav" data-q="我想预约办理业务">AI导航</view>
     </view>
     <view class="recent-list">
       <view class="recent-item" wx:for="{{recentTransactions}}" wx:key="id">
@@ -173,6 +174,18 @@
       <view class="quick-icon chat-icon"></view>
       <text>AI助手</text>
     </view>
+  </view>
+
+  <!-- 底部独立模块：历史预约查询（与网页版侧边栏模块保持一致） -->
+  <view class="history-module" bindtap="goHistory">
+    <view class="history-module-icon">
+      <view class="history-module-icon-inner"></view>
+    </view>
+    <view class="history-module-info">
+      <text class="history-module-title">历史预约查询</text>
+      <text class="history-module-sub">查询过往预约记录与办理状态</text>
+    </view>
+    <view class="history-module-arrow">›</view>
   </view>
 
 </view>

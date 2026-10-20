@@ -1,0 +1,42 @@
+<view class="container {{elderlyMode ? 'elderly-mode' : ''}}">
+
+  <!-- 状态筛选 -->
+  <view class="filter-tabs">
+    <view
+      wx:for="{{tabs}}"
+      wx:key="value"
+      class="filter-tab {{filter === item.value ? 'filter-tab-active' : ''}}"
+      data-value="{{item.value}}"
+      bindtap="onFilter">
+      {{item.label}}
+    </view>
+  </view>
+
+  <!-- 加载中（首次） -->
+  <view class="state-box" wx:if="{{loading && list.length === 0}}">
+    <view class="state-text">正在加载历史预约...</view>
+  </view>
+
+  <!-- 空态 -->
+  <view class="state-box" wx:elif="{{!loading && list.length === 0}}">
+    <view class="state-text">暂无历史预约记录</view>
+    <view class="state-sub">完成一笔网点预约后将在此展示</view>
+  </view>
+
+  <!-- 记录列表 -->
+  <view class="list" wx:else>
+    <view class="appt-item" wx:for="{{list}}" wx:key="id">
+      <view class="appt-info">
+        <text class="appt-biz">{{item.businessType}}</text>
+        <text class="appt-branch">{{item.branchName}}</text>
+        <text class="appt-time">{{item.appointmentDate}} {{item.timeSlot}}</text>
+      </view>
+      <view class="badge {{item.statusClass}}">{{item.statusText}}</view>
+    </view>
+
+    <!-- 加载更多 / 到底 -->
+    <view class="list-footer" wx:if="{{loading}}">加载中...</view>
+    <view class="list-footer" wx:elif="{{finished && list.length > 0}}">已加载全部 {{total}} 条记录</view>
+  </view>
+
+</view>

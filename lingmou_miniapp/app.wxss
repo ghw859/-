@@ -171,6 +171,16 @@ page {
   box-sizing: border-box;
 }
 
+/* input 原生组件有固定默认高度，上下 padding 会把提示词挤出边框，
+   单独指定高度并去掉上下 padding，保证提示词与边框垂直居中对齐 */
+input.input-field {
+  height: 92rpx;
+  min-height: 92rpx;
+  line-height: 44rpx;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .input-field:focus {
   border-color: var(--color-primary);
 }
@@ -250,4 +260,12 @@ page {
 .elderly-mode .input-field {
   font-size: 36rpx;
   padding: 32rpx 28rpx;
+}
+
+.elderly-mode input.input-field {
+  height: 108rpx;
+  min-height: 108rpx;
+  line-height: 52rpx;
+  padding-top: 0;
+  padding-bottom: 0;
 }

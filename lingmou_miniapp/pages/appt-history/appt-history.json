@@ -1,0 +1,5 @@
+{
+  "navigationBarTitleText": "历史预约查询",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 50
+}

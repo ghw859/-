@@ -13,6 +13,15 @@ module.exports.getAppointment = (id) => get('/api/appointments/' + id)
 module.exports.createAppointment = (data) => post('/api/appointments', data)
 module.exports.cancelAppointment = (id) => del('/api/appointments/' + id)
 module.exports.updateProgress = (id, data) => put('/api/appointments/' + id + '/progress', data)
+// 历史预约分页查询：{ pageNum, pageSize, status?, startDate?, endDate? }
+module.exports.fetchAppointmentHistory = (params) => {
+  const p = params || {}
+  const qs = Object.keys(p)
+    .filter(k => p[k] !== undefined && p[k] !== null && p[k] !== '')
+    .map(k => k + '=' + encodeURIComponent(p[k]))
+    .join('&')
+  return get('/api/appointments/history' + (qs ? '?' + qs : ''))
+}
 
 // ============ 信誉分接口 ============
 module.exports.getCredit = () => get('/api/credit')
