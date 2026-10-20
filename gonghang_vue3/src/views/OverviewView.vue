@@ -357,13 +357,13 @@ const recentTransactions = [
         <table class="w-full max-w-[720px] table-fixed text-center border-collapse sm:max-w-none sm:min-w-[600px]">
           <thead>
             <tr>
-              <th class="w-20 sm:w-40 text-[10px] font-black text-slate-500 text-left pl-1 pr-1 sm:pl-2 sm:pr-2 pb-2">网点</th>
+              <th class="w-32 sm:w-40 text-[10px] font-black text-slate-500 text-left pl-1 pr-1 sm:pl-2 sm:pr-2 pb-2">网点</th>
               <th v-for="h in hours" :key="h" class="text-[9px] font-bold text-slate-400 pb-2 px-0.5 sm:px-1">{{ h }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="row in heatmapData" :key="row.branch">
-              <td class="text-[10px] font-bold text-slate-700 text-left leading-tight sm:leading-normal pl-1 pr-1 sm:pl-2 sm:pr-2 py-1 sm:whitespace-nowrap">{{ row.shortName }}</td>
+              <td class="text-[10px] font-bold text-slate-700 text-left leading-tight sm:leading-normal pl-1 pr-1 sm:pl-2 sm:pr-2 py-1 whitespace-nowrap">{{ row.shortName }}</td>
               <td v-for="(cell, i) in row.cells" :key="i" class="py-0.5 px-0.5">
                 <div :class="[cell.bg, cell.textClass, 'w-full aspect-square flex items-center justify-center rounded text-[10px] font-black sm:block sm:aspect-auto sm:rounded-md sm:py-1.5 sm:text-[9px]']">{{ cell.val }}</div>
               </td>
@@ -373,7 +373,7 @@ const recentTransactions = [
       </div>
       <div class="mt-3 bg-emerald-50 rounded-xl p-3 border border-emerald-200 flex items-center gap-2">
         <i class="fa-solid fa-lightbulb text-emerald-500"></i>
-        <span class="text-xs font-bold text-emerald-700">{{ heatmapTip }}</span>
+        <span class="text-[11px] sm:text-xs font-bold text-emerald-700">{{ heatmapTip }}</span>
       </div>
     </div>
 
